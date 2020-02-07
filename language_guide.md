@@ -81,14 +81,17 @@ if imblue and myColor == "blue" {
 	print("Da ba dee da ba da")
 }
 ```
-In addition, Rose supports simple statements before the condition. This can be useful to reuse the returned value from a function multiple times:
+In addition, Rose supports simple statements before the condition. This can be useful to reuse the returned value from a function multiple times. The variable is only available inside the scope of the if statement however.
 ```
 import "math"
 
 if s = math.Sqrt(16); if s > 0 and s == 4 {
 	print("math doesn't lie")
 }
+
+print(s) // compile error: s doesn't exist in this scope
 ```
+
 
 ### Looping
 Rose only has one kind of loop: the for loop. This may seem limiting, however Rose's for loop can handle all common looping types. A traditional for loop looks about how you'd expect it to. A for loop with one condition is essentially a while loop, and a for loop with no condition is an infinite loop.
@@ -152,6 +155,25 @@ This is a long, pointless message.
 Bye!
 `
 ```
+
+#### String Interpolation
+Strings can be built and formatted very easily and concisely using string interpolation. When curly braces `{}` are present in string literals, their contents will be evaluated as an expression and replaced with their values. Here's an example:
+```
+import "math"
+
+name, age, location = "Andrew", 22, "the interwebs"
+print("Hi, my name is {name}. I'm {age} years old currently at {location}.")
+
+n = 56
+print("The square root of {n} is {math.Sqrt(65)}")
+```
+Strings are legal inside string expressions, but comments are not:
+```
+ppl = {"George": "Foreman", "Andy": "Sandberg", "Ronald": "McDonald"}
+print("His surname is {ppl["Ronald]}")
+print("This will not compile: {ppl // this is illegal}")
+```
+
 #### The 'any' Type
 The `any` type in Rose is special in that it can represent anything. Shocking I know. Declared variables of the `any` type can be assigned anything at any point.
 ```
@@ -360,7 +382,104 @@ let unrecommendedBoi = 42 // ok, but not recommended, 42 is known at compile tim
 ```
 
 ## Functions
-Functions are declared with the `fn` keyword. Additionally, functions are first-class citizens in Rose. This means that functions can be assigned to variables, passed into functions as arguments, and returned from functions. Here's some simple code to demonstrate:
+### Declaring Functions
+Functions are declared with the `fn` keyword. Additionally, functions are first-class citizens in Rose. This means that functions can be assigned to variables, passed into functions as arguments, and returned from functions.
+```
+fn fib(n int) int {
+	if n == 1 {
+		return 0
+	} else if n == 2 {
+		return 1
+	}
+	return fib(n+1) + fib(n+2)
+}
+
+print(fib(35)) // 9227465
+```
+As you can see, function return types are *after* the function name and parameters. This makes lambda and closure declarations very easy to read. 
+
+In Rose, function parameter type and return type annotations are actually optional. If a function parameter is omitted, the compiler sets the parameter type to be `any`. This can be useful if you want to create concise lambdas or functions, or just want may different types to be able to be passed into a function.
+```
+fn printMe(me) {
+	print(me)
+}
+
+printMe(5) // 5
+printMe("print me!") // print me!
+printMe([1, 6, 8]) // [1, 6, 8]
+```
+When return types are omitted however, Rose follows a few rules to determine what the return type of the function is:
+1. If the function does not have any return statements, it is a void function.
+2. If the function returns type `T` at least one time, the return type is `T`.
+3. If a function returns multiple different types, the return type is `any`.
+
+Here's some examples:
+```
+fn willHappen(fortune string) { // returns bool
+	if len(fortune) % 2 == 0 {
+		return true
+	}
+	return false
+}
+
+print(willHappen("I will be given a Cybertruck next Thursday")) // true
+
+fn sayHi() { // void function
+	print("...hi")
+}
+
+fn returnEVERYTHING(x) { // returns any
+	if x > 4 {
+		return 9
+	} else if x < 4 {
+		return "blue"
+	} else {
+		return {"red", "green", "yogurt"}
+	}
+}
+```
+
+### Optional Parameters
+Optional parameters are parameters that are, well, optional. They have a default value, and will use the default value if one is not explicitly passed. Parameters that are not optional are called *positional* parameters.
+```
+fn printChars(s string, reverse bool=false) {
+	if reverse {
+		s.reverse()
+	}
+	
+	for c in s {
+		print(c)
+	}
+}
+
+alpha = "abc"
+printChars(alpha) // prints "a\nb\nc"
+printChars(alpha, true) // prints "c\nb\na"
+printChars(alpha, reverse=true) // also prints "c\nb\na"
+```
+Optional parameters *must* come after positional parameters, both when declaring a function and calling it. If a type for a optional parameter is not given, it will be inferred from the default value.
+
+### Variadic Parameters
+Variadic parameters are parameters that accept any number of arguments. They are created by prepending an ellipses `...` to the parameter name. There can only be *one* variadic parameter per function, and it must be the *last* parameter. Inside the function, all the arguments passed to the variadic parameter is accessible as a list.
+```
+fn fullFunc(x, y=2, ...z) { // ok, variadic parameter is last
+	print("I compile :)")
+}
+
+fn badFunc(...stuff, things) { // illegal: variadic parameter is not last
+	print("I won't compile")
+}
+
+fn variadicFunc(...args) { // ok, variadic parameter is the only parameter
+	print(len(args))
+}
+
+variadicFunc(1, 2, 3, 'f', "john") // prints "5"
+variadicFunc() // prints "0"
+```
+
+### Lambdas and Closures
+
 ```
 fn each(seq list[int], f fn(i int)) {
     for e in seq {
@@ -368,15 +487,25 @@ fn each(seq list[int], f fn(i int)) {
     }
 }
 
-fn sum(init int, seq list[int]) int {
-    each(seq, fn(i int) { init += i })
+fn sum(seq list[int], init=0) int {
+    each(seq, fn(i) { init += i })
     return init
 }
 
-print(sum(0, [1, 2, 3])) // 6
+print(sum([1, 2, 3])) // 6
 ```
-As you can see, function return types are *after* the function name and parameters. This makes lambda and closure declarations very easy to read. 
 
 ## TODO
+- Functions
+	- Special lambda syntax
+	- Passing mutable/immutable types
+	- Passing constant variables
+- Advanced Types
+	- errors
+	- structs
+	- optionals
+	- results
+	- channels
+	- interfaces
 - Switch statements
 - Enums
