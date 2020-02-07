@@ -1,6 +1,7 @@
 # A Tour of Rose
+## Introduction
+Rose is a general-purpose, statically typed language that focuses on writeability, readability, safety, and simplicity (in that order).  It is designed to provide the expressiveness and elegance of dynamically typed languages, like Python, but keep the safety and maintainability of statically typed languages, such as Go. Rose has explicit support for concurrency, and aims to make error handling easy to write and understand. Rose is also garbage collected, so you don't have to worry about managing memory.
 
-- [Introduction](#introduction)
 - [Basic Syntax](#basic-syntax)
   * [Hello World](#hello-world)
   * [Comments](#comments)
@@ -12,7 +13,7 @@
 - [Types](#types)
   * [Basic Types](#basic-types)
     + [String Interpolation](#string-interpolation)
-    + [The 'any' Type](#the-any-type)
+    + [The 'any' Type](#the--any--type)
   * [Zero Values](#zero-values)
   * [Container Types](#container-types)
     + [Lists](#lists)
@@ -24,7 +25,7 @@
     + [Testing For Membership](#testing-for-membership)
     + [Slicing](#slicing)
     + [Using make to Create Containers](#using-make-to-create-containers)
-  * [How Are Types Passed Around?](#how-are-types-passed-around)
+  * [How Are Types Passed Around?](#how-are-types-passed-around-)
   * [Constants](#constants)
 - [Functions](#functions)
   * [Declaring Functions](#declaring-functions)
@@ -35,9 +36,6 @@
   * [Defer Statements](#defer-statements)
   * [Goroutines](#goroutines)
 - [TODO](#todo)
-
-## Introduction
-Rose is a general-purpose, statically typed language that focuses on writeability, readability, safety, and simplicity (in that order).  It is designed to provide the expressiveness and elegance of dynamically typed languages, like Python, but keep the safety and maintainability of statically typed languages, such as Go. Rose has explicit support for concurrency, and aims to make error handling easy to write and understand. Rose is also garbage collected, so you don't have to worry about managing memory.
 
 ## Basic Syntax
 ### Hello World
