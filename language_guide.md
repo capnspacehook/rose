@@ -200,7 +200,7 @@ Bye!
 ```
 
 #### String Interpolation
-Strings can be built and formatted very easily and concisely using string interpolation. When curly braces `{}` are present in string literals, their contents will be evaluated as an expression and replaced with their values. Here's an example:
+Strings can be built and formatted very easily and concisely using string interpolation. When curly braces `{}` are present in string literals, their contents will be evaluated as an expression called a *string expression* and replaced with their values. Here's an example:
 ```
 import "math"
 
@@ -209,6 +209,11 @@ print("Hi, my name is {name}. I'm {age} years old currently at {location}.")
 
 n = 56
 print("The square root of {n} is {math.Sqrt(65)}")
+```
+If you want a literal curly brace in a string literal, you need to escape the curly brace with another curly brace, or just use a raw string literal, which doesn't support string expressions.
+```
+print("{{Braces}} {{{{galore}}}}") // {Braces} {{galore}}
+print(`Here's some code: if isHungry { buyPizza() }`)
 ```
 Strings are legal inside string expressions, but comments are not:
 ```
@@ -343,7 +348,7 @@ people = [
 ]
 
 for name, age, profession in people {
-	printf("Name: %s, Age: %d, Profession: %s", name, age, profession)
+	print("Name: {name}; Age: {age}; Profession: {profession}")
 }
 ```
 This requires that there are the same number of variables getting assigned as there are elements in the container.
