@@ -67,10 +67,10 @@ Notice that type names appear *after* the variable name. This is to maximize rea
 
 ## Logic Control
 ### If Statements
-If statements have standard syntax in Rose. Curly braces `{}` are always required though. Else statements *must* start directly after the closing curly brace of the preceding if statement. Rose uses the keywords `and, or, not` as boolean operators, these can be used to create complex but readable boolean expressions.
+If statements have standard syntax in Rose. Curly braces `{}` are always required though. Else and else if clauses *must* start directly after the closing curly brace of the preceding if statement. Rose uses the keywords `and, or, not` as boolean operators, these can be used to create complex but readable boolean expressions.
 ```
 imblue = true
-if imblue {
+if not imblue {
 	print("I'm blue")
 } else {
 	print("...")
@@ -79,7 +79,8 @@ if imblue {
 myColor = "blue"
 if imblue and myColor == "blue" {
 	print("Da ba dee da ba da")
-}
+} else if imblue and myColor == "green" {
+	print("I'm turquoise")
 ```
 In addition, Rose supports simple statements before the condition. This can be useful to reuse the returned value from a function multiple times. The variable is only available inside the scope of the if statement however.
 ```
@@ -94,7 +95,7 @@ print(s) // compile error: s doesn't exist in this scope
 
 
 ### Looping
-Rose only has one kind of loop: the for loop. This may seem limiting, however Rose's for loop can handle all common looping types. A traditional for loop looks about how you'd expect it to. A for loop with one condition is essentially a while loop, and a for loop with no condition is an infinite loop.
+Rose only has one kind of loop: the for loop. This may seem limiting, however Rose's for loop can handle all common looping types. A traditional for loop looks about how you'd expect it to, a for loop with one condition is essentially a while loop, and a for loop with no condition is an infinite loop.
 ```
 for i = 0; i < 5; i++ { // standard for loop
 	print(i)
@@ -107,6 +108,14 @@ for stillGoing { // essentially a while loop
 
 for { // infinite loop
 	print("This will print FOREVER")
+}
+```
+For loops can also have an optional else clause that fires when the loop condition evaluates to false on the first iteration:
+```
+for 2 + 2 == 5 {
+	print("math lied to me")
+} else {
+	print("I guess my professor was right...")
 }
 ```
 
@@ -290,7 +299,7 @@ for grade in grades if grade > 70 {
 #### Container Unpacking
 Containers can easily be unpacked by assigning multiple variables to a container. Multiple assignment is really just unpacking a tuple inline. This can even be used to great effect in for in loops:
 ```
-t = ['h', 'i'], 8
+t = ['h', 'i', 8]
 x, y = t
 
 people = [
@@ -371,15 +380,22 @@ print(l) // [0, 2, 3]
 ```
 
 ### Constants
-Rose has two ways to declare constants: with `const` and with `let`. The difference is that variables declared with `const` must have their value known at *compile time*, while variables declared with `let` must be know at *runtime*.
+Rose has two ways to declare constants: with `const` and with `let`. The difference is that variables declared with `const` must have their value known at *compile time*, while variables declared with `let` must be know at *runtime*. Declaring a variable as constant, with either `const` or `let` ensures that the value of the variable will not change during the program's lifetime.
 ```
 import "math/rand"
 
 const pi = 3.14159 // ok
 let randBoi = rand.Intn(10) // ok
 const badBoi = rand.Intn(15) // illegal: result of function not known at compile time
-let unrecommendedBoi = 42 // ok, but not recommended, 42 is known at compile time
+let unrecommendedBoi = "don't do this" // ok but not recommended, this string is known at compile time
 ```
+Constants are very powerful in Rose, as *any type* can be a constant. Normally mutable types become immutable when declared as constants, and their methods and operators that normally would mutate their state are unavailable.
+```
+const philosophy = {"meaning of life": 42}
+philosophy["the matrix"] = "real" // error: can't assign to constant map
+print(philosophy["meaning of life"]) // 42
+```
+Additionally, it is important to note that when initializing a constant variable with a value `v`, and when assigning a constant value `v` to a mutable variable, the value is copied. Normally, if `v` is a mutable type, `v`'s reference would be copied. But to make sure constant values are separate and not modified, Rose copies `v` in both of these cases.
 
 ## Functions
 ### Declaring Functions
@@ -439,6 +455,18 @@ fn returnEVERYTHING(x) { // returns any
 }
 ```
 
+### Multiple Returns
+Functions can return multiple values by returning a tuple. Then the returned tuple can be unpacked for convenient access to the multiple return values.
+```
+fn split(s string) (string, string) {
+	middleLen = len(s) / 2
+	return s[:middleLen], s[middleLen:]
+}
+
+first, last = split("hello there charming")
+```
+I know what you're probably thinking , and yes, Rose can still infer what the function return type is if you omit a return type annotation and return multiple values. 
+
 ### Optional Parameters
 Optional parameters are parameters that are, well, optional. They have a default value, and will use the default value if one is not explicitly passed. Parameters that are not optional are called *positional* parameters.
 ```
@@ -460,7 +488,7 @@ printChars(alpha, reverse=true) // also prints "c\nb\na"
 Optional parameters *must* come after positional parameters, both when declaring a function and calling it. If a type for a optional parameter is not given, it will be inferred from the default value.
 
 ### Variadic Parameters
-Variadic parameters are parameters that accept any number of arguments. They are created by prepending an ellipses `...` to the parameter name. There can only be *one* variadic parameter per function, and it must be the *last* parameter. Inside the function, all the arguments passed to the variadic parameter is accessible as a list.
+Variadic parameters are parameters that accept any number of arguments. They are created by prepending ellipses `...` to the parameter name. There can only be *one* variadic parameter per function, and it must be the *last* parameter. Inside the function, all the arguments passed to the variadic parameter is accessible as a list.
 ```
 fn fullFunc(x, y=2, ...z) { // ok, variadic parameter is last
 	print("I compile :)")
@@ -479,7 +507,7 @@ variadicFunc() // prints "0"
 ```
 
 ### Lambdas and Closures
-
+Rose has great support for lambdas, or anonymous functions, and closures, which are special lambdas which "close" around variable(s) in the scope that it is declared in.
 ```
 fn each(seq list[int], f fn(i int)) {
     for e in seq {
@@ -494,12 +522,35 @@ fn sum(seq list[int], init=0) int {
 
 print(sum([1, 2, 3])) // 6
 ```
+If a lambda or closure doesn't have any parameters, the parentheses can be omitted entirely for conciseness: 
+```
+f = fn { print("I'm a super small lambda") }
+```
+
+### Defer Statements
+A defer statement defers the execution of a function until the surrounding function returns. Defer statements are evaluated immediately, but the deferred function is not run until the surrounding function returns. Additionally, deferred functions are guaranteed to execute so long as the surrounding function returns and the program doesn't completely crash.
+```
+fn aTwist() {
+	defer fn { print("world") }
+	print("hello")
+}
+
+aTwist() // hello world
+```
+Deferred functions are pushed onto a stack, and therefore run in last-in-first-out order.
+```
+fn testDefers() {
+	defer fn { print("I ran 3rd") }
+	defer fn { print("I ran 2nd") }
+	defer fn { print("I ran 1st") }
+}
+
+testDefers() // I ran 1st\nI ran 2nd\nI ran 3rd
+```
+
+### Goroutines
 
 ## TODO
-- Functions
-	- Special lambda syntax
-	- Passing mutable/immutable types
-	- Passing constant variables
 - Advanced Types
 	- errors
 	- structs
