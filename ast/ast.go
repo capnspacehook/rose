@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+
 	"github.com/capnspacehook/rose/token"
 )
 
@@ -41,6 +42,7 @@ func (tn *TypeName) String() string       { return tn.Token.Literal }
 type VarDeclStatement struct {
 	Token token.Token
 	Name  *Identifier
+	Type  *TypeName
 	Value Expression
 }
 
@@ -51,6 +53,9 @@ func (vs *VarDeclStatement) String() string {
 
 	out.WriteString(vs.TokenLiteral() + " ")
 	out.WriteString(vs.Name.String())
+	if vs.Type != nil {
+		out.WriteString(" " + vs.Type.String())
+	}
 	out.WriteString(" = ")
 
 	if vs.Value != nil {

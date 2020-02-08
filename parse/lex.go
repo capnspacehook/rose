@@ -109,7 +109,11 @@ func (lx *lexer) Lex(yy *yySymType) int {
 }
 
 func (lx *lexer) Err() error {
-	return lx.err
+	if lx.err.errors != nil {
+		return lx.err
+	}
+
+	return nil
 }
 
 func (lx *lexer) lexerError(s string) {

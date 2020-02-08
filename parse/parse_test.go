@@ -4,15 +4,28 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/capnspacehook/rose/ast"
 )
 
+func printStatements(stmts []ast.Statement) {
+	for _, stmt := range stmts {
+		fmt.Println(stmt.String())
+	}
+}
+
 func TestParser(t *testing.T) {
-	input := `var foo = 0x90
+	input := `var foo int = 0x90
 var bar = 56.0e1
 var baz = 114_223_117
 var assigned = foo
+var boolean = true
 `
 
 	statements, err := Parse(strings.NewReader(input))
-	fmt.Println(statements, err)
+	if err != nil {
+		t.Error(err)
+	}
+
+	printStatements(statements)
 }

@@ -2,6 +2,7 @@
 package parse
 
 import (
+    "fmt"
     "strconv"
 
     "github.com/capnspacehook/rose/ast"
@@ -14,7 +15,7 @@ import (
     stmtlist []ast.Statement
     expr ast.Expression
     exprlist []ast.Expression
-    node ast.Node
+    typename *ast.TypeName
     tok token.Token
 }
 
@@ -27,7 +28,7 @@ import (
 
 %type <stmtlist> statements
 %type <stmt> statement varDecl
-//%type <node> type
+%type <typename> type
 %type <expr> expression
 
 %%
@@ -60,9 +61,29 @@ varDecl:
             Value: $4,
         }
     }
+|   VAR IDENT type ASSIGN expression
+    {
+        $$ = &ast.VarDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Type:  $3,
+            Value: $5,
+        }
+    }
 ;
 
-
+type:
+    IDENT
+    {
+        if _, ok := typeNames[$1.Literal]; ok {
+            $$ = &ast.TypeName{
+                Token: $1,
+            }
+        } else {
+            yylex.Error(fmt.Sprintf("%q is not a valid type", $1.Literal))
+        }
+    }
+;
 
 expression:
     IDENT

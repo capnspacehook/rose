@@ -8,20 +8,21 @@ import __yyfmt__ "fmt"
 //line rose.y:2
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/capnspacehook/rose/ast"
 	"github.com/capnspacehook/rose/token"
 )
 
-//line rose.y:12
+//line rose.y:13
 type yySymType struct {
 	yys      int
 	stmt     ast.Statement
 	stmtlist []ast.Statement
 	expr     ast.Expression
 	exprlist []ast.Expression
-	node     ast.Node
+	typename *ast.TypeName
 	tok      token.Token
 }
 
@@ -62,39 +63,41 @@ var yyExca = [...]int{
 
 const yyPrivate = 57344
 
-const yyLast = 11
+const yyLast = 16
 
 var yyAct = [...]int{
 
-	5, 7, 9, 10, 11, 6, 1, 8, 4, 3,
-	2,
+	10, 9, 5, 14, 11, 12, 13, 7, 6, 1,
+	8, 4, 3, 2, 0, 15,
 }
 var yyPact = [...]int{
 
-	-1000, -1000, -11, -1000, -1000, 1, -9, -2, -1000, -1000,
-	-1000, -1000,
+	-1000, -1000, -9, -1000, -1000, 4, -3, 0, -7, -1000,
+	-1000, -1000, -1000, -1000, 0, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 10, 9, 8, 7, 6,
+	0, 13, 12, 11, 10, 0, 9,
 }
 var yyR1 = [...]int{
 
-	0, 5, 1, 1, 2, 3, 4, 4, 4,
+	0, 6, 1, 1, 2, 3, 3, 4, 5, 5,
+	5,
 }
 var yyR2 = [...]int{
 
-	0, 1, 0, 2, 1, 4, 1, 1, 1,
+	0, 1, 0, 2, 1, 4, 5, 1, 1, 1,
+	1,
 }
 var yyChk = [...]int{
 
-	-1000, -5, -1, -2, -3, 11, 4, 10, -4, 4,
-	5, 6,
+	-1000, -6, -1, -2, -3, 11, 4, 10, -4, 4,
+	-5, 4, 5, 6, 10, -5,
 }
 var yyDef = [...]int{
 
-	2, -2, 1, 3, 4, 0, 0, 0, 5, 6,
-	7, 8,
+	2, -2, 1, 3, 4, 0, 0, 0, 0, 7,
+	5, 8, 9, 10, 0, 6,
 }
 var yyTok1 = [...]int{
 
@@ -447,25 +450,25 @@ yydefault:
 
 	case 1:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:37
+//line rose.y:38
 		{
 			yylex.(*lexer).Statements = yyDollar[1].stmtlist
 		}
 	case 2:
 		yyDollar = yyS[yypt-0 : yypt+1]
-//line rose.y:43
+//line rose.y:44
 		{
 			yyVAL.stmtlist = nil
 		}
 	case 3:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line rose.y:45
+//line rose.y:46
 		{
 			yyVAL.stmtlist = append(yyDollar[1].stmtlist, yyDollar[2].stmt)
 		}
 	case 5:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line rose.y:56
+//line rose.y:57
 		{
 			yyVAL.stmt = &ast.VarDeclStatement{
 				Token: yyDollar[1].tok,
@@ -474,8 +477,31 @@ yydefault:
 			}
 		}
 	case 6:
+		yyDollar = yyS[yypt-5 : yypt+1]
+//line rose.y:65
+		{
+			yyVAL.stmt = &ast.VarDeclStatement{
+				Token: yyDollar[1].tok,
+				Name:  &ast.Identifier{Token: yyDollar[2].tok},
+				Type:  yyDollar[3].typename,
+				Value: yyDollar[5].expr,
+			}
+		}
+	case 7:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:69
+//line rose.y:77
+		{
+			if _, ok := typeNames[yyDollar[1].tok.Literal]; ok {
+				yyVAL.typename = &ast.TypeName{
+					Token: yyDollar[1].tok,
+				}
+			} else {
+				yylex.Error(fmt.Sprintf("%q is not a valid type", yyDollar[1].tok.Literal))
+			}
+		}
+	case 8:
+		yyDollar = yyS[yypt-1 : yypt+1]
+//line rose.y:90
 		{
 			if v, ok := boolConsts[yyDollar[1].tok.Literal]; ok {
 				yyVAL.expr = &ast.Boolean{
@@ -492,9 +518,9 @@ yydefault:
 				}
 			}
 		}
-	case 7:
+	case 9:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:86
+//line rose.y:107
 		{
 			i, err := strconv.ParseInt(yyDollar[1].tok.Literal, 0, 64)
 			if err != nil {
@@ -506,9 +532,9 @@ yydefault:
 				Value: i,
 			}
 		}
-	case 8:
+	case 10:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:98
+//line rose.y:119
 		{
 			f, err := strconv.ParseFloat(yyDollar[1].tok.Literal, 64)
 			if err != nil {
