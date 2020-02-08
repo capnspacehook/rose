@@ -157,3 +157,12 @@ type FloatLiteral struct {
 func (fl *FloatLiteral) expressionNode()      {}
 func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Literal }
 func (fl *FloatLiteral) String() string       { return fl.Token.Literal }
+
+type CharLiteral struct {
+	Token token.Token
+	Value rune
+}
+
+func (cl *CharLiteral) expressionNode()      {}
+func (cl *CharLiteral) TokenLiteral() string { return cl.Token.Literal }
+func (cl *CharLiteral) String() string       { return cl.Token.Literal }

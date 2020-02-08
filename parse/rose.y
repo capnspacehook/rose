@@ -178,4 +178,18 @@ expression:
             Value: f,
         }
     }
+|   CHAR
+    {
+        if n := len($1.Literal); n >= 2 {
+			c, _, _, err := strconv.UnquoteChar($1.Literal[1:n-1], '\'')
+            if err != nil {
+				yylex.(*lexer).Error(err.Error())
+			} else {
+                $$ = &ast.CharLiteral{
+                    Token: $1,
+                    Value: c,
+                }
+            }
+		}
+    }
 ;

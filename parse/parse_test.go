@@ -21,6 +21,7 @@ var baz = 114_223_117
 var assigned = foo
 boolean = true
 nothing = nil
+char = '\x60'
 
 const uwu = 5
 let yes = false

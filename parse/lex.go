@@ -94,6 +94,9 @@ func (lx *lexer) Lex(yy *yySymType) int {
 	case scanner.Float:
 		yy.tok = token.Token{Type: token.FLOAT, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
 		return FLOAT
+	case scanner.Char:
+		yy.tok = token.Token{Type: token.CHAR, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
+		return CHAR
 	case scanner.RawString:
 		yy.tok = token.Token{Type: token.RAW_STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
 		return RAW_STRING
