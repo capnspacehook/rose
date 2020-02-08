@@ -15,8 +15,8 @@ type ParserErrors struct {
 	errors []ParseError
 }
 
-func (p *ParserErrors) AddError(errStr string, lexerError bool) {
-	p.errors = append(p.errors, ParseError{err: errors.New(errStr), lexerError: lexerError})
+func (p *ParserErrors) AddError(errStr string, pos scanner.Position, lexerError bool) {
+	p.errors = append(p.errors, ParseError{err: errors.New(errStr), pos: pos, lexerError: lexerError})
 }
 
 func (p ParserErrors) Error() string {
@@ -33,7 +33,7 @@ func (p ParserErrors) Error() string {
 			header = "parse error: "
 		}
 
-		_, writeErr = buf.WriteString(header + err.Error())
+		_, writeErr = buf.WriteString(header + err.pos.String() + ": " + err.Error() + "\n")
 		if writeErr != nil {
 			panic(writeErr)
 		}
@@ -44,6 +44,7 @@ func (p ParserErrors) Error() string {
 
 type ParseError struct {
 	err        error
+	pos        scanner.Position
 	lexerError bool
 }
 
@@ -61,13 +62,16 @@ type lexer struct {
 }
 
 func newLexer(in io.Reader) *lexer {
-	var s scanner.Scanner
+	var l lexer
 
-	s.Init(in)
-	s.Mode = scanner.ScanInts | scanner.GoTokens
-	s.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
+	l.scanner.Init(in)
+	l.scanner.Mode = scanner.ScanInts | scanner.GoTokens
+	l.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
+	l.scanner.Error = func(s *scanner.Scanner, msg string) {
+		l.Error(msg)
+	}
 
-	return &lexer{scanner: s}
+	return &l
 }
 
 func (lx *lexer) Lex(yy *yySymType) int {
@@ -204,16 +208,16 @@ func (lx *lexer) Err() error {
 	return nil
 }
 
-func (lx *lexer) lexerError(s string) {
-	lx.err.AddError(lx.scanner.Pos().String()+" "+s, true)
+func (lx *lexer) lexerError(msg string) {
+	lx.err.AddError(msg, lx.scanner.Pos(), true)
 }
 
 func (lx *lexer) lexerErrorf(format string, args ...interface{}) {
 	lx.lexerError(fmt.Sprintf(format, args...))
 }
 
-func (lx *lexer) Error(s string) {
-	lx.err.AddError(lx.scanner.Pos().String()+" "+s, false)
+func (lx *lexer) Error(msg string) {
+	lx.err.AddError(msg, lx.scanner.Pos(), false)
 }
 
 func (lx *lexer) Errorf(format string, args ...interface{}) {
