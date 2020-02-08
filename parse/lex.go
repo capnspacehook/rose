@@ -178,6 +178,12 @@ Scan:
 	case ':':
 		yy.tok = token.Token{Type: token.COLON, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return COLON
+	case '?':
+		yy.tok = token.Token{Type: token.QUES, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return QUES
+	case '!':
+		yy.tok = token.Token{Type: token.EXCLM, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return EXCLM
 	case scanner.EOF:
 		if lx.insertSemi {
 			lx.insertSemi = false

@@ -25,6 +25,7 @@ import (
 %token <tok> ADD SUB MUL QUO REM EXP ASSIGN
 %token <tok> LPAREN LBRACK LBRACE COMMA PERIOD 
 %token <tok> RPAREN RBRACK RBRACE SEMICOLON COLON
+%token <tok> QUES EXCLM
 // keywords
 %token <tok> CONST LET VAR
 
