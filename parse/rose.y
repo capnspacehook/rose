@@ -44,7 +44,7 @@ main:
 
 statements:
     { $$ = nil }
-|   statements statement
+|   statements statement SEMICOLON
     {
         $$ = append($1, $2)
     }
