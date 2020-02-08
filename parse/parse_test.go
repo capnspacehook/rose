@@ -21,6 +21,11 @@ var baz = 114_223_117
 var assigned = foo
 boolean = true
 nothing = nil
+
+const uwu = 5
+let yes = false
+const butt float = 9000.01
+let urMom bool = true
 `
 
 	statements, err := Parse(strings.NewReader(input))

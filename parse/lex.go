@@ -75,6 +75,12 @@ func (lx *lexer) Lex(yy *yySymType) int {
 		tokType := token.Lookup(tokText)
 
 		switch tokType {
+		case token.CONST:
+			yy.tok = token.NewToken(token.CONST, lx.scanner.Pos())
+			return CONST
+		case token.LET:
+			yy.tok = token.NewToken(token.LET, lx.scanner.Pos())
+			return LET
 		case token.VAR:
 			yy.tok = token.NewToken(token.VAR, lx.scanner.Pos())
 			return VAR

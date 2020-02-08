@@ -26,10 +26,10 @@ import (
 %token <tok> LPAREN LBRACK LBRACE COMMA PERIOD 
 %token <tok> RPAREN RBRACK RBRACE SEMICOLON COLON
 // keywords
-%token <tok> VAR
+%token <tok> CONST LET VAR
 
 %type <stmtlist> statements
-%type <stmt> statement assignment varDecl
+%type <stmt> statement assignment varDecl constDecl
 %type <typename> type
 %type <expr> expression
 
@@ -52,7 +52,8 @@ statements:
 
 statement:
     assignment
-|   varDecl 
+|   varDecl
+|   constDecl
 ;
 
 varDecl:
@@ -94,6 +95,43 @@ assignment:
         $$ = &ast.AssignmentStatement{
             Name:  &ast.Identifier{Token: $1},
             Value: $3,
+        }
+    }
+;
+
+constDecl:
+    CONST IDENT ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Value: $4,
+        }
+    }
+|   CONST IDENT type ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Type:  $3,
+            Value: $5,
+        }
+    }
+|   LET IDENT ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Value: $4,
+        }
+    }
+|   LET IDENT type ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Type:  $3,
+            Value: $5,
         }
     }
 ;

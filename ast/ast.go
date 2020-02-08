@@ -39,6 +39,26 @@ func (tn *TypeName) String() string       { return tn.Token.Literal }
 // Statements
 //
 
+type AssignmentStatement struct {
+	Name  *Identifier
+	Value Expression
+}
+
+func (as *AssignmentStatement) statementNode()       {}
+func (as *AssignmentStatement) TokenLiteral() string { return as.Name.TokenLiteral() }
+func (as *AssignmentStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(as.Name.String())
+	out.WriteString(" = ")
+
+	if as.Value != nil {
+		out.WriteString(as.Value.String())
+	}
+
+	return out.String()
+}
+
 type VarDeclStatement struct {
 	Token token.Token
 	Name  *Identifier
@@ -65,21 +85,27 @@ func (vs *VarDeclStatement) String() string {
 	return out.String()
 }
 
-type AssignmentStatement struct {
+type ConstDeclStatement struct {
+	Token token.Token
 	Name  *Identifier
+	Type  *TypeName
 	Value Expression
 }
 
-func (as *AssignmentStatement) statementNode()       {}
-func (as *AssignmentStatement) TokenLiteral() string { return as.Name.TokenLiteral() }
-func (as *AssignmentStatement) String() string {
+func (cs *ConstDeclStatement) statementNode()       {}
+func (cs *ConstDeclStatement) TokenLiteral() string { return cs.Token.Literal }
+func (cs *ConstDeclStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(as.Name.String())
+	out.WriteString(cs.TokenLiteral() + " ")
+	out.WriteString(cs.Name.String())
+	if cs.Type != nil {
+		out.WriteString(" " + cs.Type.String())
+	}
 	out.WriteString(" = ")
 
-	if as.Value != nil {
-		out.WriteString(as.Value.String())
+	if cs.Value != nil {
+		out.WriteString(cs.Value.String())
 	}
 
 	return out.String()

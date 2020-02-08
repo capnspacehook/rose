@@ -10,6 +10,7 @@ import (
 
 var typeNames = map[string]bool{
 	"any":    true,
+	"bool":   true,
 	"int":    true,
 	"float":  true,
 	"string": true,
