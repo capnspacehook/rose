@@ -35,7 +35,7 @@ import (
 main: 
     statements
     {
-        yylex.(*Lexer).Statements = $1
+        yylex.(*lexer).Statements = $1
     }
 ;
 
@@ -86,7 +86,7 @@ expression:
     {
         i, err := strconv.ParseInt($1.Literal, 0, 64)
         if err != nil {
-            yylex.(*Lexer).Error(err.Error())
+            yylex.(*lexer).Error(err.Error())
         }
 
         $$ = &ast.IntegerLiteral{
@@ -98,7 +98,7 @@ expression:
     {
         f, err := strconv.ParseFloat($1.Literal, 64)
         if err != nil {
-            yylex.(*Lexer).Error(err.Error())
+            yylex.(*lexer).Error(err.Error())
         }
 
         $$ = &ast.FloatLiteral{

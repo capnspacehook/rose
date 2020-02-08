@@ -51,23 +51,23 @@ func (p ParseError) Error() string {
 	return p.err.Error()
 }
 
-type Lexer struct {
+type lexer struct {
 	err     ParserErrors
 	scanner scanner.Scanner
 
 	Statements []ast.Statement
 }
 
-func NewLexer(in io.Reader) *Lexer {
+func newLexer(in io.Reader) *lexer {
 	var s scanner.Scanner
 
 	s.Init(in)
 	s.Mode = scanner.ScanInts | scanner.GoTokens
 
-	return &Lexer{scanner: s}
+	return &lexer{scanner: s}
 }
 
-func (lx *Lexer) Lex(yy *yySymType) int {
+func (lx *lexer) Lex(yy *yySymType) int {
 	tok := lx.scanner.Scan()
 	switch tok {
 	case scanner.Ident:
@@ -108,22 +108,22 @@ func (lx *Lexer) Lex(yy *yySymType) int {
 	return int(tok)
 }
 
-func (lx *Lexer) Err() error {
+func (lx *lexer) Err() error {
 	return lx.err
 }
 
-func (lx *Lexer) lexerError(s string) {
+func (lx *lexer) lexerError(s string) {
 	lx.err.AddError(lx.scanner.Pos().String()+" "+s, true)
 }
 
-func (lx *Lexer) lexerErrorf(format string, args ...interface{}) {
+func (lx *lexer) lexerErrorf(format string, args ...interface{}) {
 	lx.lexerError(fmt.Sprintf(format, args...))
 }
 
-func (lx *Lexer) Error(s string) {
+func (lx *lexer) Error(s string) {
 	lx.err.AddError(lx.scanner.Pos().String()+" "+s, false)
 }
 
-func (lx *Lexer) Errorf(format string, args ...interface{}) {
+func (lx *lexer) Errorf(format string, args ...interface{}) {
 	lx.Error(fmt.Sprintf(format, args...))
 }

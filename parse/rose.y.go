@@ -449,7 +449,7 @@ yydefault:
 		yyDollar = yyS[yypt-1 : yypt+1]
 //line rose.y:37
 		{
-			yylex.(*Lexer).Statements = yyDollar[1].stmtlist
+			yylex.(*lexer).Statements = yyDollar[1].stmtlist
 		}
 	case 2:
 		yyDollar = yyS[yypt-0 : yypt+1]
@@ -498,7 +498,7 @@ yydefault:
 		{
 			i, err := strconv.ParseInt(yyDollar[1].tok.Literal, 0, 64)
 			if err != nil {
-				yylex.(*Lexer).Error(err.Error())
+				yylex.(*lexer).Error(err.Error())
 			}
 
 			yyVAL.expr = &ast.IntegerLiteral{
@@ -512,7 +512,7 @@ yydefault:
 		{
 			f, err := strconv.ParseFloat(yyDollar[1].tok.Literal, 64)
 			if err != nil {
-				yylex.(*Lexer).Error(err.Error())
+				yylex.(*lexer).Error(err.Error())
 			}
 
 			yyVAL.expr = &ast.FloatLiteral{
