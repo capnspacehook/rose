@@ -39,6 +39,7 @@ const (
 	MUL // *
 	QUO // /
 	REM // %
+	EXP // **
 
 	AND     // &
 	OR      // |
@@ -116,6 +117,7 @@ var tokens = [...]string{
 	MUL: "*",
 	QUO: "/",
 	REM: "%",
+	EXP: "**",
 
 	AND:     "&",
 	OR:      "|",

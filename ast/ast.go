@@ -65,6 +65,26 @@ func (vs *VarDeclStatement) String() string {
 	return out.String()
 }
 
+type AssignmentStatement struct {
+	Name  *Identifier
+	Value Expression
+}
+
+func (as *AssignmentStatement) statementNode()       {}
+func (as *AssignmentStatement) TokenLiteral() string { return as.Name.TokenLiteral() }
+func (as *AssignmentStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(as.Name.String())
+	out.WriteString(" = ")
+
+	if as.Value != nil {
+		out.WriteString(as.Value.String())
+	}
+
+	return out.String()
+}
+
 //
 // Expressions
 //

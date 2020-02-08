@@ -32,8 +32,24 @@ const FLOAT = 57348
 const CHAR = 57349
 const STRING = 57350
 const RAW_STRING = 57351
-const ASSIGN = 57352
-const VAR = 57353
+const ADD = 57352
+const SUB = 57353
+const MUL = 57354
+const QUO = 57355
+const REM = 57356
+const EXP = 57357
+const ASSIGN = 57358
+const LPAREN = 57359
+const LBRACK = 57360
+const LBRACE = 57361
+const COMMA = 57362
+const PERIOD = 57363
+const RPAREN = 57364
+const RBRACK = 57365
+const RBRACE = 57366
+const SEMICOLON = 57367
+const COLON = 57368
+const VAR = 57369
 
 var yyToknames = [...]string{
 	"$end",
@@ -45,7 +61,23 @@ var yyToknames = [...]string{
 	"CHAR",
 	"STRING",
 	"RAW_STRING",
+	"ADD",
+	"SUB",
+	"MUL",
+	"QUO",
+	"REM",
+	"EXP",
 	"ASSIGN",
+	"LPAREN",
+	"LBRACK",
+	"LBRACE",
+	"COMMA",
+	"PERIOD",
+	"RPAREN",
+	"RBRACK",
+	"RBRACE",
+	"SEMICOLON",
+	"COLON",
 	"VAR",
 }
 var yyStatenames = [...]string{}
@@ -63,41 +95,42 @@ var yyExca = [...]int{
 
 const yyPrivate = 57344
 
-const yyLast = 16
+const yyLast = 24
 
 var yyAct = [...]int{
 
-	10, 9, 5, 14, 11, 12, 13, 7, 6, 1,
-	8, 4, 3, 2, 0, 15,
+	6, 10, 16, 18, 8, 11, 12, 13, 9, 1,
+	15, 5, 4, 3, 14, 2, 17, 0, 0, 0,
+	19, 0, 0, 7,
 }
 var yyPact = [...]int{
 
-	-1000, -1000, -9, -1000, -1000, 4, -3, 0, -7, -1000,
-	-1000, -1000, -1000, -1000, 0, -1000,
+	-1000, -1000, -4, -1000, -1000, -1000, -12, 4, 1, -2,
+	-1000, -1000, -1000, -1000, 1, -13, -1000, -1000, 1, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 13, 12, 11, 10, 0, 9,
+	0, 15, 13, 12, 11, 10, 1, 9,
 }
 var yyR1 = [...]int{
 
-	0, 6, 1, 1, 2, 3, 3, 4, 5, 5,
-	5,
+	0, 7, 1, 1, 2, 2, 4, 4, 5, 3,
+	6, 6, 6,
 }
 var yyR2 = [...]int{
 
-	0, 1, 0, 2, 1, 4, 5, 1, 1, 1,
-	1,
+	0, 1, 0, 2, 1, 1, 4, 5, 1, 3,
+	1, 1, 1,
 }
 var yyChk = [...]int{
 
-	-1000, -6, -1, -2, -3, 11, 4, 10, -4, 4,
-	-5, 4, 5, 6, 10, -5,
+	-1000, -7, -1, -2, -3, -4, 4, 27, 16, 4,
+	-6, 4, 5, 6, 16, -5, 4, -6, 16, -6,
 }
 var yyDef = [...]int{
 
-	2, -2, 1, 3, 4, 0, 0, 0, 0, 7,
-	5, 8, 9, 10, 0, 6,
+	2, -2, 1, 3, 4, 5, 0, 0, 0, 0,
+	9, 10, 11, 12, 0, 0, 8, 6, 0, 7,
 }
 var yyTok1 = [...]int{
 
@@ -106,6 +139,8 @@ var yyTok1 = [...]int{
 var yyTok2 = [...]int{
 
 	2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+	12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+	22, 23, 24, 25, 26, 27,
 }
 var yyTok3 = [...]int{
 	0,
@@ -450,25 +485,25 @@ yydefault:
 
 	case 1:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:38
+//line rose.y:40
 		{
 			yylex.(*lexer).Statements = yyDollar[1].stmtlist
 		}
 	case 2:
 		yyDollar = yyS[yypt-0 : yypt+1]
-//line rose.y:44
+//line rose.y:46
 		{
 			yyVAL.stmtlist = nil
 		}
 	case 3:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line rose.y:46
+//line rose.y:48
 		{
 			yyVAL.stmtlist = append(yyDollar[1].stmtlist, yyDollar[2].stmt)
 		}
-	case 5:
+	case 6:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line rose.y:57
+//line rose.y:60
 		{
 			yyVAL.stmt = &ast.VarDeclStatement{
 				Token: yyDollar[1].tok,
@@ -476,9 +511,9 @@ yydefault:
 				Value: yyDollar[4].expr,
 			}
 		}
-	case 6:
+	case 7:
 		yyDollar = yyS[yypt-5 : yypt+1]
-//line rose.y:65
+//line rose.y:68
 		{
 			yyVAL.stmt = &ast.VarDeclStatement{
 				Token: yyDollar[1].tok,
@@ -487,9 +522,9 @@ yydefault:
 				Value: yyDollar[5].expr,
 			}
 		}
-	case 7:
+	case 8:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:77
+//line rose.y:80
 		{
 			if _, ok := typeNames[yyDollar[1].tok.Literal]; ok {
 				yyVAL.typename = &ast.TypeName{
@@ -499,9 +534,18 @@ yydefault:
 				yylex.Error(fmt.Sprintf("%q is not a valid type", yyDollar[1].tok.Literal))
 			}
 		}
-	case 8:
+	case 9:
+		yyDollar = yyS[yypt-3 : yypt+1]
+//line rose.y:93
+		{
+			yyVAL.stmt = &ast.AssignmentStatement{
+				Name:  &ast.Identifier{Token: yyDollar[1].tok},
+				Value: yyDollar[3].expr,
+			}
+		}
+	case 10:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:90
+//line rose.y:103
 		{
 			if v, ok := boolConsts[yyDollar[1].tok.Literal]; ok {
 				yyVAL.expr = &ast.Boolean{
@@ -518,9 +562,9 @@ yydefault:
 				}
 			}
 		}
-	case 9:
+	case 11:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:107
+//line rose.y:120
 		{
 			i, err := strconv.ParseInt(yyDollar[1].tok.Literal, 0, 64)
 			if err != nil {
@@ -532,9 +576,9 @@ yydefault:
 				Value: i,
 			}
 		}
-	case 10:
+	case 12:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:119
+//line rose.y:132
 		{
 			f, err := strconv.ParseFloat(yyDollar[1].tok.Literal, 64)
 			if err != nil {

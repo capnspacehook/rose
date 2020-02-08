@@ -19,15 +19,17 @@ import (
     tok token.Token
 }
 
-// literals
+// identifiers and literals
 %token <tok> IDENT INT FLOAT CHAR STRING RAW_STRING
 // operators and punctuation
-%token <tok> ASSIGN
+%token <tok> ADD SUB MUL QUO REM EXP ASSIGN
+%token <tok> LPAREN LBRACK LBRACE COMMA PERIOD 
+%token <tok> RPAREN RBRACK RBRACE SEMICOLON COLON
 // keywords
 %token <tok> VAR
 
 %type <stmtlist> statements
-%type <stmt> statement varDecl
+%type <stmt> statement assignment varDecl
 %type <typename> type
 %type <expr> expression
 
@@ -49,7 +51,8 @@ statements:
 ;
 
 statement:
-    varDecl
+    assignment
+|   varDecl 
 ;
 
 varDecl:
@@ -81,6 +84,16 @@ type:
             }
         } else {
             yylex.Error(fmt.Sprintf("%q is not a valid type", $1.Literal))
+        }
+    }
+;
+
+assignment:
+    IDENT ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
         }
     }
 ;

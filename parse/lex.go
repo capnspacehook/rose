@@ -80,10 +80,6 @@ func (lx *lexer) Lex(yy *yySymType) int {
 			return VAR
 		}
 
-		if tokType != token.IDENT {
-			panic("invalid token type")
-		}
-
 		yy.tok = token.Token{Type: token.IDENT, Pos: lx.scanner.Pos(), Literal: tokText}
 		return IDENT
 	case scanner.Int:
@@ -99,10 +95,63 @@ func (lx *lexer) Lex(yy *yySymType) int {
 		return 0
 	default:
 		switch tok {
+		case '+':
+			yy.tok = token.Token{Type: token.ADD, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return ADD
+		case '-':
+			yy.tok = token.Token{Type: token.SUB, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return SUB
+		case '*':
+			if lx.scanner.Peek() == '*' {
+				yy.tok = token.Token{Type: token.EXP, Pos: lx.scanner.Pos(), Literal: "**"}
+				return EXP
+			}
+
+			yy.tok = token.Token{Type: token.MUL, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return MUL
+		case '/':
+			yy.tok = token.Token{Type: token.QUO, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return QUO
+		case '%':
+			yy.tok = token.Token{Type: token.REM, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return REM
+
 		case '=':
 			yy.tok = token.Token{Type: token.ASSIGN, Pos: lx.scanner.Pos(), Literal: string(tok)}
 			return ASSIGN
+
+		case '(':
+			yy.tok = token.Token{Type: token.LPAREN, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return LPAREN
+		case '[':
+			yy.tok = token.Token{Type: token.LBRACK, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return LBRACK
+		case '{':
+			yy.tok = token.Token{Type: token.LBRACE, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return LBRACE
+		case ',':
+			yy.tok = token.Token{Type: token.COMMA, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return COMMA
+		case '.':
+			yy.tok = token.Token{Type: token.PERIOD, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return PERIOD
+		case ')':
+			yy.tok = token.Token{Type: token.RPAREN, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return RPAREN
+		case ']':
+			yy.tok = token.Token{Type: token.RBRACK, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return RBRACK
+		case '}':
+			yy.tok = token.Token{Type: token.RBRACE, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return RBRACE
+		case ';':
+			yy.tok = token.Token{Type: token.SEMICOLON, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return SEMICOLON
+		case ':':
+			yy.tok = token.Token{Type: token.COLON, Pos: lx.scanner.Pos(), Literal: string(tok)}
+			return COLON
 		}
+
 	}
 
 	return int(tok)

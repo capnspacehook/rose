@@ -19,7 +19,8 @@ func TestParser(t *testing.T) {
 var bar = 56.0e1
 var baz = 114_223_117
 var assigned = foo
-var boolean = true
+boolean = true
+nothing = nil
 `
 
 	statements, err := Parse(strings.NewReader(input))
