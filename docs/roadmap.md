@@ -5,10 +5,18 @@
  - [ ] Tests written and passing
 
 ## Parser
-- [x] Variable declarations
-- [x] Constant declarations
-- [ ]  
+- [ ] Variable declarations
+	- [x] Simple declarations
+	- [ ] Multiple declarations
+- [ ] Constant declarations
+	- [x] Simple declarations
+	- [ ] Multiple declarations
+- [ ]  Assignments
+	- [x] Simple assignments
+	- [ ] Multiple assignments
+- [ ] Literals
+	- [ ] 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNjQ4ODIwNTcwXX0=
+eyJoaXN0b3J5IjpbLTYxMDkzNTA5NCw2NDg4MjA1NzBdfQ==
 -->
