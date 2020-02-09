@@ -297,7 +297,13 @@ operand:
     }
 |   basic_lit
 |   LPAREN expression RPAREN
-    { $$ = $2 }
+    { 
+        $$ = &ast.ParenExpression{
+            Lparen: $1,
+            Expr:   $2,
+            Rparen: $3,
+        }
+    }
 ;
 
 conversion:

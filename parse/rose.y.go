@@ -878,11 +878,15 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 //line rose.y:300
 		{
-			yyVAL.expr = yyDollar[2].expr
+			yyVAL.expr = &ast.ParenExpression{
+				Lparen: yyDollar[1].tok,
+				Expr:   yyDollar[2].expr,
+				Rparen: yyDollar[3].tok,
+			}
 		}
 	case 36:
 		yyDollar = yyS[yypt-4 : yypt+1]
-//line rose.y:305
+//line rose.y:311
 		{
 			yyVAL.expr = &ast.Conversion{
 				Type:  yyDollar[1].typename,
@@ -891,7 +895,7 @@ yydefault:
 		}
 	case 37:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:315
+//line rose.y:321
 		{
 			i, err := strconv.ParseInt(yyDollar[1].tok.Literal, 0, 64)
 			if err != nil {
@@ -905,7 +909,7 @@ yydefault:
 		}
 	case 38:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:327
+//line rose.y:333
 		{
 			f, err := strconv.ParseFloat(yyDollar[1].tok.Literal, 64)
 			if err != nil {
@@ -919,7 +923,7 @@ yydefault:
 		}
 	case 39:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:339
+//line rose.y:345
 		{
 			if n := len(yyDollar[1].tok.Literal); n >= 2 {
 				c, _, _, err := strconv.UnquoteChar(yyDollar[1].tok.Literal[1:n-1], '\'')
@@ -935,7 +939,7 @@ yydefault:
 		}
 	case 40:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:353
+//line rose.y:359
 		{
 			yyVAL.expr = &ast.StringLiteral{
 				Token: yyDollar[1].tok,
@@ -943,7 +947,7 @@ yydefault:
 		}
 	case 41:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line rose.y:359
+//line rose.y:365
 		{
 			yyVAL.expr = &ast.RawStringLiteral{
 				Token: yyDollar[1].tok,

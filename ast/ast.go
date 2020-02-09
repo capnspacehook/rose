@@ -184,6 +184,18 @@ func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 func (i *Identifier) String() string       { return i.Token.Literal }
 
+type ParenExpression struct {
+	Lparen token.Token
+	Expr   Expression
+	Rparen token.Token
+}
+
+func (pe *ParenExpression) expressionNode()      {}
+func (pe *ParenExpression) TokenLiteral() string { return pe.Lparen.Literal }
+func (pe *ParenExpression) String() string {
+	return "(" + pe.Expr.String() + ")"
+}
+
 type UnaryExpression struct {
 	Token token.Token
 	Value Expression
