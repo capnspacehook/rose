@@ -206,3 +206,14 @@ func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
 func (be *BinaryExpression) String() string {
 	return be.Lhs.String() + " " + be.Token.Literal + " " + be.Rhs.String()
 }
+
+type Conversion struct {
+	Type  *TypeName
+	Value Expression
+}
+
+func (c *Conversion) expressionNode()      {}
+func (c *Conversion) TokenLiteral() string { return c.Type.TokenLiteral() }
+func (c *Conversion) String() string {
+	return c.Type.String() + "(" + c.Value.String() + ")"
+}

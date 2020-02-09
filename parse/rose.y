@@ -46,7 +46,7 @@ import (
 %type <stmtlist> statements
 %type <stmt> statement assignment varDecl constDecl
 %type <typename> type
-%type <expr> expression unary_expression primary_expression operand basic_lit
+%type <expr> expression unary_expression primary_expression operand conversion basic_lit
 %type <tok> binary_op rel_op add_op mul_op unary_op
 
 %%
@@ -274,6 +274,7 @@ unary_expression:
 
 primary_expression:
     operand
+|   conversion
 ;
 
 operand:
@@ -297,6 +298,16 @@ operand:
 |   basic_lit
 |   LPAREN expression RPAREN
     { $$ = $2 }
+;
+
+conversion:
+    type LPAREN expression RPAREN
+    {
+        $$ = &ast.Conversion{
+            Type:  $1,
+            Value: $3,
+        }
+    }
 ;
 
 basic_lit:
