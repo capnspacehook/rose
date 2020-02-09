@@ -15,7 +15,7 @@ func printStatements(stmts []ast.Statement) {
 }
 
 func TestParser(t *testing.T) {
-	input := `var foo int = 0b90; var foo = 7;
+	input := `var foo int = 0b10011; var foo = 7;
 var bar = 56.0e1
 var baz = 114_223_117
 var assigned = foo

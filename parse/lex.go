@@ -124,30 +124,155 @@ Scan:
 		yy.tok = token.Token{Type: token.RAW_STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
 		return RAW_STRING
 	case '+':
+		pTok := lx.scanner.Peek()
+		if pTok == '+' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.INC, Pos: lx.scanner.Pos(), Literal: "++"}
+			return INC
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.ADD_ASSIGN, Pos: lx.scanner.Pos(), Literal: "+="}
+			return ADD_ASSIGN
+		}
+
 		yy.tok = token.Token{Type: token.ADD, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return ADD
 	case '-':
+		pTok := lx.scanner.Peek()
+		if pTok == '-' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.DEC, Pos: lx.scanner.Pos(), Literal: "--"}
+			return DEC
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.SUB_ASSIGN, Pos: lx.scanner.Pos(), Literal: "-="}
+			return SUB_ASSIGN
+		}
+
 		yy.tok = token.Token{Type: token.SUB, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return SUB
 	case '*':
-		if lx.scanner.Peek() == '*' {
+		pTok := lx.scanner.Peek()
+		if pTok == '*' {
+			lx.scanner.Next()
 			yy.tok = token.Token{Type: token.EXP, Pos: lx.scanner.Pos(), Literal: "**"}
 			return EXP
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.MUL_ASSIGN, Pos: lx.scanner.Pos(), Literal: "*="}
+			return MUL_ASSIGN
 		}
 
 		yy.tok = token.Token{Type: token.MUL, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return MUL
 	case '/':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.QUO_ASSIGN, Pos: lx.scanner.Pos(), Literal: "/="}
+			return QUO_ASSIGN
+		}
+
 		yy.tok = token.Token{Type: token.QUO, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return QUO
 	case '%':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.REM_ASSIGN, Pos: lx.scanner.Pos(), Literal: "%="}
+			return REM_ASSIGN
+		}
+
 		yy.tok = token.Token{Type: token.REM, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return REM
+	case '&':
+		pTok := lx.scanner.Peek()
+		if pTok == '^' {
+			lx.scanner.Next()
+			if lx.scanner.Peek() == '=' {
+				lx.scanner.Next()
+				yy.tok = token.Token{Type: token.AND_NOT_ASSIGN, Pos: lx.scanner.Pos(), Literal: "&^"}
+				return AND_NOT_ASSIGN
+			}
 
+			yy.tok = token.Token{Type: token.AND_NOT, Pos: lx.scanner.Pos(), Literal: "&^"}
+			return AND_NOT
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.AND_ASSIGN, Pos: lx.scanner.Pos(), Literal: "&="}
+			return AND_ASSIGN
+		}
+
+		yy.tok = token.Token{Type: token.AND, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return AND
+	case '|':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.OR_ASSIGN, Pos: lx.scanner.Pos(), Literal: "|="}
+			return OR_ASSIGN
+		}
+
+		yy.tok = token.Token{Type: token.OR, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return OR
+	case '^':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.XOR_ASSIGN, Pos: lx.scanner.Pos(), Literal: "^="}
+			return XOR_ASSIGN
+		}
+
+		yy.tok = token.Token{Type: token.XOR, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return XOR
+	case '<':
+		pTok := lx.scanner.Peek()
+		if pTok == '<' {
+			lx.scanner.Next()
+			if lx.scanner.Peek() == '=' {
+				lx.scanner.Next()
+				yy.tok = token.Token{Type: token.SHL_ASSIGN, Pos: lx.scanner.Pos(), Literal: "<<="}
+				return SHL_ASSIGN
+			}
+
+			yy.tok = token.Token{Type: token.SHL, Pos: lx.scanner.Pos(), Literal: "<<"}
+			return SHL
+		} else if pTok == '-' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.ARROW, Pos: lx.scanner.Pos(), Literal: "<-"}
+			return ARROW
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.LEQ, Pos: lx.scanner.Pos(), Literal: "<="}
+			return LEQ
+		}
+
+		yy.tok = token.Token{Type: token.LSS, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return LSS
+	case '>':
+		pTok := lx.scanner.Peek()
+		if pTok == '>' {
+			lx.scanner.Next()
+			if lx.scanner.Peek() == '=' {
+				lx.scanner.Next()
+				yy.tok = token.Token{Type: token.SHR_ASSIGN, Pos: lx.scanner.Pos(), Literal: ">>="}
+				return SHR_ASSIGN
+			}
+			yy.tok = token.Token{Type: token.SHR, Pos: lx.scanner.Pos(), Literal: ">>"}
+			return SHR
+		} else if pTok == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.GEQ, Pos: lx.scanner.Pos(), Literal: ">="}
+			return GEQ
+		}
+
+		yy.tok = token.Token{Type: token.GTR, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return GTR
 	case '=':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.EQL, Pos: lx.scanner.Pos(), Literal: "=="}
+			return EQL
+		}
+
 		yy.tok = token.Token{Type: token.ASSIGN, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return ASSIGN
-
 	case '(':
 		yy.tok = token.Token{Type: token.LPAREN, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return LPAREN
@@ -161,6 +286,15 @@ Scan:
 		yy.tok = token.Token{Type: token.COMMA, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return COMMA
 	case '.':
+		if lx.scanner.Peek() == '.' {
+			lx.scanner.Next()
+			if lx.scanner.Peek() == '.' {
+				lx.scanner.Next()
+				yy.tok = token.Token{Type: token.ELLIPSIS, Pos: lx.scanner.Pos(), Literal: "..."}
+				return ELLIPSIS
+			}
+		}
+
 		yy.tok = token.Token{Type: token.PERIOD, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return PERIOD
 	case ')':
@@ -186,6 +320,12 @@ Scan:
 		yy.tok = token.Token{Type: token.QUES, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return QUES
 	case '!':
+		if lx.scanner.Peek() == '=' {
+			lx.scanner.Next()
+			yy.tok = token.Token{Type: token.NEQ, Pos: lx.scanner.Pos(), Literal: "!="}
+			return NEQ
+		}
+
 		yy.tok = token.Token{Type: token.EXCLM, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return EXCLM
 	case scanner.EOF:
