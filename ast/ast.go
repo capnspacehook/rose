@@ -166,3 +166,19 @@ type CharLiteral struct {
 func (cl *CharLiteral) expressionNode()      {}
 func (cl *CharLiteral) TokenLiteral() string { return cl.Token.Literal }
 func (cl *CharLiteral) String() string       { return cl.Token.Literal }
+
+type StringLiteral struct {
+	Token token.Token
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+
+type RawStringLiteral struct {
+	Token token.Token
+}
+
+func (rl *RawStringLiteral) expressionNode()      {}
+func (rl *RawStringLiteral) TokenLiteral() string { return rl.Token.Literal }
+func (rl *RawStringLiteral) String() string       { return rl.Token.Literal }

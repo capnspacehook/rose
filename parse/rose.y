@@ -24,7 +24,7 @@ import (
 // operators and punctuation
 %token <tok> ADD SUB MUL QUO REM EXP
 %token <tok> AND OR XOR SHL SHR AND_NOT
-%token <tok> ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN QUO_ASSIGN REM_ASSIGN
+%token <tok> ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN QUO_ASSIGN REM_ASSIGN EXP_ASSIGN
 %token <tok> AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHL_ASSIGN SHR_ASSIGN AND_NOT_ASSIGN
 %token <tok> LAND LOR ARROW INC DEC
 %token <tok> EQL LSS GTR ASSIGN NOT
@@ -198,5 +198,17 @@ expression:
                 }
             }
 		}
+    }
+|   STRING
+    {
+        $$ = &ast.StringLiteral{
+            Token: $1,
+        }
+    }
+|   RAW_STRING
+    {
+        $$ = &ast.RawStringLiteral{
+            Token: $1,
+        }
     }
 ;

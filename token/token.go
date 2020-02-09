@@ -53,6 +53,7 @@ const (
 	MUL_ASSIGN // *=
 	QUO_ASSIGN // /=
 	REM_ASSIGN // %=
+	EXP_ASSIGN // **=
 
 	AND_ASSIGN     // &=
 	OR_ASSIGN      // |=
@@ -133,6 +134,7 @@ var tokens = [...]string{
 	MUL_ASSIGN: "*=",
 	QUO_ASSIGN: "/=",
 	REM_ASSIGN: "%=",
+	EXP_ASSIGN: "**",
 
 	AND_ASSIGN:     "&=",
 	OR_ASSIGN:      "|=",

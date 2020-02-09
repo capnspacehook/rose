@@ -119,6 +119,10 @@ Scan:
 		lx.insertSemi = true
 		yy.tok = token.Token{Type: token.CHAR, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
 		return CHAR
+	case scanner.String: // TODO: handle string expressions
+		lx.insertSemi = true
+		yy.tok = token.Token{Type: token.STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
+		return STRING
 	case scanner.RawString:
 		lx.insertSemi = true
 		yy.tok = token.Token{Type: token.RAW_STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
@@ -155,6 +159,12 @@ Scan:
 		pTok := lx.scanner.Peek()
 		if pTok == '*' {
 			lx.scanner.Next()
+			if lx.scanner.Peek() == '=' {
+				lx.scanner.Next()
+				yy.tok = token.Token{Type: token.EXP_ASSIGN, Pos: lx.scanner.Pos(), Literal: "**="}
+				return EXP_ASSIGN
+			}
+
 			yy.tok = token.Token{Type: token.EXP, Pos: lx.scanner.Pos(), Literal: "**"}
 			return EXP
 		} else if pTok == '=' {

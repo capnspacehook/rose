@@ -49,41 +49,42 @@ const SUB_ASSIGN = 57365
 const MUL_ASSIGN = 57366
 const QUO_ASSIGN = 57367
 const REM_ASSIGN = 57368
-const AND_ASSIGN = 57369
-const OR_ASSIGN = 57370
-const XOR_ASSIGN = 57371
-const SHL_ASSIGN = 57372
-const SHR_ASSIGN = 57373
-const AND_NOT_ASSIGN = 57374
-const LAND = 57375
-const LOR = 57376
-const ARROW = 57377
-const INC = 57378
-const DEC = 57379
-const EQL = 57380
-const LSS = 57381
-const GTR = 57382
-const ASSIGN = 57383
-const NOT = 57384
-const NEQ = 57385
-const LEQ = 57386
-const GEQ = 57387
-const ELLIPSIS = 57388
-const LPAREN = 57389
-const LBRACK = 57390
-const LBRACE = 57391
-const COMMA = 57392
-const PERIOD = 57393
-const RPAREN = 57394
-const RBRACK = 57395
-const RBRACE = 57396
-const SEMICOLON = 57397
-const COLON = 57398
-const QUES = 57399
-const EXCLM = 57400
-const CONST = 57401
-const LET = 57402
-const VAR = 57403
+const EXP_ASSIGN = 57369
+const AND_ASSIGN = 57370
+const OR_ASSIGN = 57371
+const XOR_ASSIGN = 57372
+const SHL_ASSIGN = 57373
+const SHR_ASSIGN = 57374
+const AND_NOT_ASSIGN = 57375
+const LAND = 57376
+const LOR = 57377
+const ARROW = 57378
+const INC = 57379
+const DEC = 57380
+const EQL = 57381
+const LSS = 57382
+const GTR = 57383
+const ASSIGN = 57384
+const NOT = 57385
+const NEQ = 57386
+const LEQ = 57387
+const GEQ = 57388
+const ELLIPSIS = 57389
+const LPAREN = 57390
+const LBRACK = 57391
+const LBRACE = 57392
+const COMMA = 57393
+const PERIOD = 57394
+const RPAREN = 57395
+const RBRACK = 57396
+const RBRACE = 57397
+const SEMICOLON = 57398
+const COLON = 57399
+const QUES = 57400
+const EXCLM = 57401
+const CONST = 57402
+const LET = 57403
+const VAR = 57404
 
 var yyToknames = [...]string{
 	"$end",
@@ -112,6 +113,7 @@ var yyToknames = [...]string{
 	"MUL_ASSIGN",
 	"QUO_ASSIGN",
 	"REM_ASSIGN",
+	"EXP_ASSIGN",
 	"AND_ASSIGN",
 	"OR_ASSIGN",
 	"XOR_ASSIGN",
@@ -163,51 +165,53 @@ var yyExca = [...]int{
 
 const yyPrivate = 57344
 
-const yyLast = 58
+const yyLast = 59
 
 var yyAct = [...]int{
 
-	7, 11, 23, 23, 23, 33, 31, 29, 12, 22,
-	17, 18, 19, 20, 15, 14, 13, 1, 6, 5,
-	16, 4, 3, 2, 25, 27, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 26,
-	24, 21, 28, 0, 0, 30, 0, 32, 0, 0,
-	34, 0, 35, 0, 36, 9, 10, 8,
+	7, 11, 25, 25, 25, 35, 33, 31, 12, 24,
+	17, 18, 19, 20, 21, 22, 15, 14, 13, 16,
+	1, 6, 5, 4, 27, 29, 3, 2, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	28, 26, 23, 30, 0, 0, 32, 0, 34, 0,
+	0, 36, 0, 37, 0, 38, 9, 10, 8,
 }
 var yyPact = [...]int{
 
-	-1000, -1000, -4, -54, -1000, -1000, -1000, -33, 12, 11,
-	10, -1000, 6, 0, -1, -2, -1000, -1000, -1000, -1000,
-	-1000, 6, -34, -1000, 6, -35, 6, -36, -1000, 6,
-	-1000, 6, -1000, 6, -1000, -1000, -1000,
+	-1000, -1000, -4, -55, -1000, -1000, -1000, -34, 14, 13,
+	12, -1000, 6, 0, -1, -2, -1000, -1000, -1000, -1000,
+	-1000, -1000, -1000, 6, -35, -1000, 6, -36, 6, -37,
+	-1000, 6, -1000, 6, -1000, 6, -1000, -1000, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 23, 22, 21, 19, 18, 9, 20, 17,
+	0, 27, 26, 23, 22, 21, 9, 19, 20,
 }
 var yyR1 = [...]int{
 
 	0, 8, 1, 1, 2, 2, 2, 4, 4, 6,
-	3, 5, 5, 5, 5, 7, 7, 7, 7,
+	3, 5, 5, 5, 5, 7, 7, 7, 7, 7,
+	7,
 }
 var yyR2 = [...]int{
 
 	0, 1, 0, 3, 1, 1, 1, 4, 5, 1,
-	3, 4, 5, 4, 5, 1, 1, 1, 1,
+	3, 4, 5, 4, 5, 1, 1, 1, 1, 1,
+	1,
 }
 var yyChk = [...]int{
 
-	-1000, -8, -1, -2, -3, -4, -5, 4, 61, 59,
-	60, 55, 41, 4, 4, 4, -7, 4, 5, 6,
-	7, 41, -6, 4, 41, -6, 41, -6, -7, 41,
-	-7, 41, -7, 41, -7, -7, -7,
+	-1000, -8, -1, -2, -3, -4, -5, 4, 62, 60,
+	61, 56, 42, 4, 4, 4, -7, 4, 5, 6,
+	7, 8, 9, 42, -6, 4, 42, -6, 42, -6,
+	-7, 42, -7, 42, -7, 42, -7, -7, -7,
 }
 var yyDef = [...]int{
 
 	2, -2, 1, 0, 4, 5, 6, 0, 0, 0,
 	0, 3, 0, 0, 0, 0, 10, 15, 16, 17,
-	18, 0, 0, 9, 0, 0, 0, 0, 7, 0,
-	11, 0, 13, 0, 8, 12, 14,
+	18, 19, 20, 0, 0, 9, 0, 0, 0, 0,
+	7, 0, 11, 0, 13, 0, 8, 12, 14,
 }
 var yyTok1 = [...]int{
 
@@ -221,6 +225,7 @@ var yyTok2 = [...]int{
 	32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
 	42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
 	52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+	62,
 }
 var yyTok3 = [...]int{
 	0,
@@ -726,6 +731,22 @@ yydefault:
 						Value: c,
 					}
 				}
+			}
+		}
+	case 19:
+		yyDollar = yyS[yypt-1 : yypt+1]
+//line rose.y:203
+		{
+			yyVAL.expr = &ast.StringLiteral{
+				Token: yyDollar[1].tok,
+			}
+		}
+	case 20:
+		yyDollar = yyS[yypt-1 : yypt+1]
+//line rose.y:209
+		{
+			yyVAL.expr = &ast.RawStringLiteral{
+				Token: yyDollar[1].tok,
 			}
 		}
 	}
