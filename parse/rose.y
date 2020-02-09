@@ -35,10 +35,19 @@ import (
 // keywords
 %token <tok> CONST LET VAR
 
+// precedence
+%left MUL QUO REM SHL SHR AND AND_NOT
+%right EXP
+%left ADD SUB OR XOR
+%left EQL NEQ LSS LEQ GTR GEQ
+%left LAND
+%left LOR 
+
 %type <stmtlist> statements
 %type <stmt> statement assignment varDecl constDecl
 %type <typename> type
-%type <expr> expression
+%type <expr> expression unary_expression primary_expression operand basic_lit
+%type <tok> binary_op rel_op add_op mul_op unary_op
 
 %%
 
@@ -100,6 +109,103 @@ assignment:
     IDENT ASSIGN expression
     {
         $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT ADD_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT SUB_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT MUL_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT QUO_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT REM_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT EXP_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT AND_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT OR_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT XOR_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT SHL_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT SHR_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
+            Name:  &ast.Identifier{Token: $1},
+            Value: $3,
+        }
+    }
+|   IDENT AND_NOT_ASSIGN expression
+    {
+        $$ = &ast.AssignmentStatement{
+            Token: $2,
             Name:  &ast.Identifier{Token: $1},
             Value: $3,
         }
@@ -144,6 +250,33 @@ constDecl:
 ;
 
 expression:
+    unary_expression
+|   expression binary_op expression
+    {
+        $$ = &ast.BinaryExpression{
+            Lhs:   $1,
+            Token: $2,
+            Rhs:   $3,
+        }
+    }
+;
+
+unary_expression:
+    primary_expression
+|   unary_op unary_expression
+    {
+        $$ = &ast.UnaryExpression{
+            Token: $1,
+            Value: $2,
+        }
+    }
+;
+
+primary_expression:
+    operand
+;
+
+operand:
     IDENT
     {
         if v, ok := boolConsts[$1.Literal]; ok {
@@ -161,7 +294,13 @@ expression:
             }
         }
     }
-|   INT
+|   basic_lit
+|   LPAREN expression RPAREN
+    { $$ = $2 }
+;
+
+basic_lit:
+    INT
     {
         i, err := strconv.ParseInt($1.Literal, 0, 64)
         if err != nil {
@@ -211,4 +350,47 @@ expression:
             Token: $1,
         }
     }
+;
+
+binary_op:
+    LAND
+|   LOR
+|   rel_op
+|   add_op
+|   mul_op
+;
+
+rel_op:
+    EQL
+|   NEQ
+|   LSS
+|   LEQ
+|   GTR
+|   GEQ
+;
+
+add_op:
+    ADD
+|   SUB
+|   OR
+|   XOR
+;
+
+mul_op:
+    MUL
+|   QUO
+|   REM
+|   EXP
+|   SHL
+|   SHR
+|   AND
+|   AND_NOT
+;
+
+unary_op:
+    ADD
+|   SUB
+|   NOT
+|   XOR
+|   ARROW
 ;

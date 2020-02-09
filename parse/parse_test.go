@@ -30,6 +30,12 @@ const goku float = 9000.01
 let urMom bool = true
 
 stringy = "hello there"
+
+bar += 27
+bar **= 36
+
+test = +50
+bar = 20 - (10 + 2)
 `
 
 	statements, err := Parse(strings.NewReader(input))

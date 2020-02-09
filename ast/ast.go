@@ -40,17 +40,18 @@ func (tn *TypeName) String() string       { return tn.Token.Literal }
 //
 
 type AssignmentStatement struct {
+	Token token.Token
 	Name  *Identifier
 	Value Expression
 }
 
 func (as *AssignmentStatement) statementNode()       {}
-func (as *AssignmentStatement) TokenLiteral() string { return as.Name.TokenLiteral() }
+func (as *AssignmentStatement) TokenLiteral() string { return as.Token.Literal }
 func (as *AssignmentStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(as.Name.String())
-	out.WriteString(" = ")
+	out.WriteString(" " + as.TokenLiteral() + " ")
 
 	if as.Value != nil {
 		out.WriteString(as.Value.String())
@@ -115,14 +116,6 @@ func (cs *ConstDeclStatement) String() string {
 // Expressions
 //
 
-type Identifier struct {
-	Token token.Token // the token.IDENT token
-}
-
-func (i *Identifier) expressionNode()      {}
-func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
-func (i *Identifier) String() string       { return i.Token.Literal }
-
 type Nil struct {
 	Token token.Token
 }
@@ -182,3 +175,34 @@ type RawStringLiteral struct {
 func (rl *RawStringLiteral) expressionNode()      {}
 func (rl *RawStringLiteral) TokenLiteral() string { return rl.Token.Literal }
 func (rl *RawStringLiteral) String() string       { return rl.Token.Literal }
+
+type Identifier struct {
+	Token token.Token // the token.IDENT token
+}
+
+func (i *Identifier) expressionNode()      {}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+func (i *Identifier) String() string       { return i.Token.Literal }
+
+type UnaryExpression struct {
+	Token token.Token
+	Value Expression
+}
+
+func (ue *UnaryExpression) expressionNode()      {}
+func (ue *UnaryExpression) TokenLiteral() string { return ue.Token.Literal }
+func (ue *UnaryExpression) String() string {
+	return ue.Token.Literal + ue.Value.String()
+}
+
+type BinaryExpression struct {
+	Lhs   Expression
+	Token token.Token
+	Rhs   Expression
+}
+
+func (be *BinaryExpression) expressionNode()      {}
+func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BinaryExpression) String() string {
+	return be.Lhs.String() + " " + be.Token.Literal + " " + be.Rhs.String()
+}
