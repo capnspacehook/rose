@@ -11,6 +11,11 @@ func init() {
 	for i := keyword_beg + 1; i < keyword_end; i++ {
 		keywords[tokens[i]] = i
 	}
+
+	// add 'and' 'or' and 'not' as they are words
+	keywords[tokens[LAND]] = LAND
+	keywords[tokens[LOR]] = LOR
+	keywords[tokens[NOT]] = NOT
 }
 
 type TokenType int

@@ -99,6 +99,15 @@ Scan:
 		case token.LET:
 			yy.tok = token.NewToken(token.LET, lx.scanner.Pos())
 			return LET
+		case token.LAND:
+			yy.tok = token.NewToken(token.LAND, lx.scanner.Pos())
+			return LAND
+		case token.LOR:
+			yy.tok = token.NewToken(token.LOR, lx.scanner.Pos())
+			return LOR
+		case token.NOT:
+			yy.tok = token.NewToken(token.NOT, lx.scanner.Pos())
+			return NOT
 		case token.VAR:
 			yy.tok = token.NewToken(token.VAR, lx.scanner.Pos())
 			return VAR

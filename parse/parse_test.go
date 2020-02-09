@@ -37,6 +37,7 @@ bar **= 36
 test = +50
 bar = 20 - (10 + 2)
 fizz = int(42.99)
+u7i = not 20
 `
 
 	statements, err := Parse(strings.NewReader(input))
