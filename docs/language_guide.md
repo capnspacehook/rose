@@ -2,6 +2,7 @@
 ## Introduction
 Rose is a general-purpose, statically typed language that focuses on writeability, readability, safety, and simplicity (in that order).  It is designed to provide the expressiveness and elegance of dynamically typed languages, like Python, but keep the safety and maintainability of statically typed languages, such as Go. Rose has explicit support for concurrency, and aims to make error handling easy to write and understand. Rose is also garbage collected, so you don't have to worry about managing memory.
 
+## Table of Contents
 - [Basic Syntax](#basic-syntax)
   * [Hello World](#hello-world)
   * [Comments](#comments)
@@ -144,6 +145,18 @@ for { // infinite loop
 	print("This will print FOREVER")
 }
 ```
+`break` and `continue` can be used as normal to break out of a loop or skip an iteration:
+```
+// "1\n2" is printed
+for i in range(5) {
+	if i == 0 {
+		continue
+	} else if i == 3 {
+		break
+	}
+	print(i)
+}
+```
 For loops can also have an optional else clause that fires when the loop condition evaluates to false on the first iteration:
 ```
 for 2 + 2 == 5 {
@@ -165,22 +178,7 @@ str = "Hello, World!"
 str[1] = '3' // illegal: strings are immutable
 str = "Yes, this works" // fine: variable "str" can be reassigned
 ```
-Note that numeric types (`int` and `float`) can be of arbitrary size. The only limit to how big these numbers can be is the machine's memory you're running a Rose program on.
-
-Rose requires explicit conversions when working with items of different types. This is to minimize confusion and make intent clear.
-```
-// Some basic numeric conversions:
-i = 42
-f = float(i)
-
-// Basic string conversions:
-x = 78
-xStr = string(x)
-
-// Working with floats and ints
-sum = 48.9 + float(x) // sum is a float of 126.9
-```
-Rose also has some less commonly used, but still useful types: `char, byte, bytes`
+Rose also has some less commonly used, but still useful types: `char, byte, bytes`.
 The `char` and `byte` types are immutable, while the `byte` type is mutable. A `string` holds `char`s, and a `bytes` holds `byte`s.
 ```
 b = bytes("Good old-fashioned oatmeal")
@@ -197,6 +195,19 @@ This is a long, pointless message.
 
 Bye!
 `
+```
+Rose requires explicit conversions when working with items of different types. This is to minimize confusion and make intent clear.
+```
+// Some basic numeric conversions:
+i = 42
+f = float(i)
+
+// Basic string conversions:
+x = 78
+xStr = string(x)
+
+// Working with floats and ints
+sum = 48.9 + float(x) // sum is a float of 126.9
 ```
 
 #### String Interpolation
@@ -588,6 +599,16 @@ testDefers() // I ran 1st\nI ran 2nd\nI ran 3rd
 ```
 
 ### Goroutines
+All you have to do to run a function asynchronously in Rose is to prepend the `go` keyword to a function call; that's it. It's that simple. Rose has no way of managing or tracking goroutines, so be sure to make sure they eventually finish.
+Imagine we have a function `isPrime` that takes an integer and returns true if it's prime or not. Given large inputs, this can take awhile. Luckily we can easily check multiple numbers at once easily with goroutines:
+```
+bigBois = [100092764521462167, 83756379996131673, 473829456141315, 8376493623621153311]
+for boi in bigBois {
+	go print(isPrime(boi))
+}
+```
+
+## Advanced Types
 
 ## TODO
 - Advanced Types
@@ -599,3 +620,6 @@ testDefers() // I ran 1st\nI ran 2nd\nI ran 3rd
 	- interfaces
 - Switch statements
 - Enums
+- Iterators
+- Generators
+	- yield statements
