@@ -1,8 +1,6 @@
 package parse
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"text/scanner"
@@ -11,49 +9,8 @@ import (
 	"github.com/capnspacehook/rose/token"
 )
 
-type ParserErrors struct {
-	errors []ParseError
-}
-
-func (p *ParserErrors) AddError(errStr string, pos scanner.Position, lexerError bool) {
-	p.errors = append(p.errors, ParseError{err: errors.New(errStr), pos: pos, lexerError: lexerError})
-}
-
-func (p ParserErrors) Error() string {
-	var (
-		header   string
-		buf      bytes.Buffer
-		writeErr error
-	)
-
-	for _, err := range p.errors {
-		if err.lexerError {
-			header = "lex error: "
-		} else {
-			header = "parse error: "
-		}
-
-		_, writeErr = buf.WriteString(header + err.pos.String() + ": " + err.Error() + "\n")
-		if writeErr != nil {
-			panic(writeErr)
-		}
-	}
-
-	return buf.String()
-}
-
-type ParseError struct {
-	err        error
-	pos        scanner.Position
-	lexerError bool
-}
-
-func (p ParseError) Error() string {
-	return p.err.Error()
-}
-
 type lexer struct {
-	errors     ParserErrors
+	errors     ErrorList
 	insertSemi bool
 
 	scanner scanner.Scanner
@@ -363,23 +320,11 @@ Scan:
 }
 
 func (lx *lexer) Err() error {
-	if lx.errors.errors != nil {
-		return lx.errors
-	}
-
-	return nil
-}
-
-func (lx *lexer) lexerError(msg string) {
-	lx.errors.AddError(msg, lx.scanner.Pos(), true)
-}
-
-func (lx *lexer) lexerErrorf(format string, args ...interface{}) {
-	lx.lexerError(fmt.Sprintf(format, args...))
+	return lx.errors.Err()
 }
 
 func (lx *lexer) Error(msg string) {
-	lx.errors.AddError(msg, lx.scanner.Pos(), false)
+	lx.errors.Add(lx.scanner.Pos(), msg)
 }
 
 func (lx *lexer) Errorf(format string, args ...interface{}) {
