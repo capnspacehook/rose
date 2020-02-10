@@ -21,5 +21,5 @@ func TestEval(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(obj.Repr())
+	fmt.Println(obj)
 }

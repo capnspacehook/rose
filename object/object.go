@@ -1,5 +1,7 @@
 package object
 
+import "github.com/capnspacehook/rose/token"
+
 type ObjectType string
 
 const (
@@ -14,11 +16,8 @@ const (
 type Object interface {
 	Type() ObjectType
 	Truthy() bool
-	Repr() string
-}
-
-type Adder interface {
-	Add(rhs Object) Object
+	Equals(rhs Object) bool
+	String() string
 }
 
 type Nil struct{}
@@ -32,3 +31,15 @@ type Float float64
 type Char rune
 
 type String string
+
+type Nilable interface {
+	IsNil() bool
+}
+
+type BinaryOperable interface {
+	BinaryOp(op token.TokenType, rhs Object) (Object, error)
+}
+
+type Orderable interface {
+	LessThan(rhs Object) bool
+}
