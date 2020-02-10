@@ -229,7 +229,7 @@ print(`Here's some code: if isHungry { buyPizza() }`)
 Strings are legal inside string expressions, but comments are not:
 ```
 ppl = {"George": "Foreman", "Andy": "Sandberg", "Ronald": "McDonald"}
-print("His surname is {ppl["Ronald]}")
+print("His surname is {ppl["Ronald"]}")
 print("This will not compile: {ppl // this is illegal}")
 ```
 
