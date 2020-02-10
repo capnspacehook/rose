@@ -53,10 +53,10 @@ func (p ParseError) Error() string {
 }
 
 type lexer struct {
-	err     ParserErrors
-	scanner scanner.Scanner
-
+	errors     ParserErrors
 	insertSemi bool
+
+	scanner scanner.Scanner
 
 	Statements []ast.Statement
 }
@@ -360,7 +360,7 @@ Scan:
 }
 
 func (lx *lexer) Err() error {
-	if lx.err.errors != nil {
+	if lx.errors.errors != nil {
 		return lx.err
 	}
 
@@ -368,7 +368,7 @@ func (lx *lexer) Err() error {
 }
 
 func (lx *lexer) lexerError(msg string) {
-	lx.err.AddError(msg, lx.scanner.Pos(), true)
+	lx.errors.AddError(msg, lx.scanner.Pos(), true)
 }
 
 func (lx *lexer) lexerErrorf(format string, args ...interface{}) {
@@ -376,7 +376,7 @@ func (lx *lexer) lexerErrorf(format string, args ...interface{}) {
 }
 
 func (lx *lexer) Error(msg string) {
-	lx.err.AddError(msg, lx.scanner.Pos(), false)
+	lx.errors.AddError(msg, lx.scanner.Pos(), false)
 }
 
 func (lx *lexer) Errorf(format string, args ...interface{}) {

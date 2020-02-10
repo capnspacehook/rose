@@ -1,6 +1,6 @@
 package parse
 
-//go: generate goyacc -o rose.y.go rose.y
+//go:generate goyacc -o rose.y.go rose.y
 
 import (
 	"io"
