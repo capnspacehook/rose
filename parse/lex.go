@@ -240,6 +240,9 @@ Scan:
 
 		yy.tok = token.Token{Type: token.XOR, Pos: lx.scanner.Pos(), Literal: string(tok)}
 		return XOR
+	case '~':
+		yy.tok = token.Token{Type: token.INVT, Pos: lx.scanner.Pos(), Literal: string(tok)}
+		return INVT
 	case '<':
 		pTok := lx.scanner.Peek()
 		if pTok == '<' {

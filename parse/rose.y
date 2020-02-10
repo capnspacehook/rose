@@ -23,7 +23,7 @@ import (
 %token <tok> IDENT INT FLOAT CHAR STRING RAW_STRING
 // operators and punctuation
 %token <tok> ADD SUB MUL QUO REM EXP
-%token <tok> AND OR XOR SHL SHR AND_NOT
+%token <tok> AND OR XOR INVT SHL SHR AND_NOT
 %token <tok> ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN QUO_ASSIGN REM_ASSIGN EXP_ASSIGN
 %token <tok> AND_ASSIGN OR_ASSIGN XOR_ASSIGN SHL_ASSIGN SHR_ASSIGN AND_NOT_ASSIGN
 %token <tok> LAND LOR ARROW INC DEC
@@ -427,6 +427,6 @@ unary_op:
     ADD
 |   SUB
 |   NOT
-|   XOR
+|   INVT
 |   ARROW
 ;

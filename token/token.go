@@ -49,6 +49,7 @@ const (
 	AND     // &
 	OR      // |
 	XOR     // ^
+	INVT    // ~
 	SHL     // <<
 	SHR     // >>
 	AND_NOT // &^
@@ -130,6 +131,7 @@ var tokens = [...]string{
 	AND:     "&",
 	OR:      "|",
 	XOR:     "^",
+	INVT:    "~",
 	SHL:     "<<",
 	SHR:     ">>",
 	AND_NOT: "&^",
