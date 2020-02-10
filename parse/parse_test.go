@@ -8,8 +8,8 @@ import (
 	"github.com/capnspacehook/rose/ast"
 )
 
-func printStatements(stmts []ast.Statement) {
-	for _, stmt := range stmts {
+func printStatements(program *ast.Program) {
+	for _, stmt := range program.Statements {
 		fmt.Println(stmt.String())
 	}
 }
@@ -38,12 +38,13 @@ test = +50
 bar = 20 - (10 + 2)
 fizz = int(42.99)
 u7i = not 20
+5 + 5
 `
 
-	statements, err := Parse(strings.NewReader(input))
+	program, err := Parse(strings.NewReader(input))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	printStatements(statements)
+	printStatements(program)
 }

@@ -21,9 +21,9 @@ var boolConsts = map[string]bool{
 	"true":  true,
 }
 
-func Parse(in io.Reader) ([]ast.Statement, error) {
+func Parse(in io.Reader) (*ast.Program, error) {
 	lexer := newLexer(in)
 	yyParse(lexer)
 
-	return lexer.Statements, lexer.Err()
+	return lexer.Program, lexer.Err()
 }

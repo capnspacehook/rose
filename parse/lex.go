@@ -58,7 +58,7 @@ type lexer struct {
 
 	scanner scanner.Scanner
 
-	Statements []ast.Statement
+	Program *ast.Program
 }
 
 func newLexer(in io.Reader) *lexer {
@@ -361,7 +361,7 @@ Scan:
 
 func (lx *lexer) Err() error {
 	if lx.errors.errors != nil {
-		return lx.err
+		return lx.errors
 	}
 
 	return nil

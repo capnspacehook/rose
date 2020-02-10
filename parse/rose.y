@@ -44,7 +44,7 @@ import (
 %left LOR 
 
 %type <stmtlist> statements
-%type <stmt> statement assignment varDecl constDecl
+%type <stmt> statement declaration varDecl constDecl simpleStatement expressionStatement assignment
 %type <typename> type
 %type <expr> expression unary_expression primary_expression operand conversion basic_lit
 %type <tok> binary_op rel_op add_op mul_op unary_op
@@ -54,7 +54,9 @@ import (
 main: 
     statements
     {
-        yylex.(*lexer).Statements = $1
+        yylex.(*lexer).Program = &ast.Program{
+            Statements: $1,
+        }
     }
 ;
 
@@ -67,8 +69,12 @@ statements:
 ;
 
 statement:
-    assignment
-|   varDecl
+    declaration
+|   simpleStatement
+;
+
+declaration:
+    varDecl
 |   constDecl
 ;
 
@@ -92,6 +98,43 @@ varDecl:
     }
 ;
 
+constDecl:
+    CONST IDENT ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Value: $4,
+        }
+    }
+|   CONST IDENT type ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Type:  $3,
+            Value: $5,
+        }
+    }
+|   LET IDENT ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Value: $4,
+        }
+    }
+|   LET IDENT type ASSIGN expression
+    {
+        $$ = &ast.ConstDeclStatement{
+            Token: $1,
+            Name:  &ast.Identifier{Token: $2},
+            Type:  $3,
+            Value: $5,
+        }
+    }
+;
+
 type:
     IDENT
     {
@@ -104,6 +147,19 @@ type:
         }
     }
 ;
+
+simpleStatement:
+    expressionStatement
+|   assignment
+;
+
+expressionStatement:
+    expression
+    {
+        $$ = &ast.ExprStatement{
+            Expr: $1,
+        }
+    }
 
 assignment:
     IDENT ASSIGN expression
@@ -212,43 +268,6 @@ assignment:
     }
 ;
 
-constDecl:
-    CONST IDENT ASSIGN expression
-    {
-        $$ = &ast.ConstDeclStatement{
-            Token: $1,
-            Name:  &ast.Identifier{Token: $2},
-            Value: $4,
-        }
-    }
-|   CONST IDENT type ASSIGN expression
-    {
-        $$ = &ast.ConstDeclStatement{
-            Token: $1,
-            Name:  &ast.Identifier{Token: $2},
-            Type:  $3,
-            Value: $5,
-        }
-    }
-|   LET IDENT ASSIGN expression
-    {
-        $$ = &ast.ConstDeclStatement{
-            Token: $1,
-            Name:  &ast.Identifier{Token: $2},
-            Value: $4,
-        }
-    }
-|   LET IDENT type ASSIGN expression
-    {
-        $$ = &ast.ConstDeclStatement{
-            Token: $1,
-            Name:  &ast.Identifier{Token: $2},
-            Type:  $3,
-            Value: $5,
-        }
-    }
-;
-
 expression:
     unary_expression
 |   expression binary_op expression
@@ -281,12 +300,12 @@ operand:
     IDENT
     {
         if v, ok := boolConsts[$1.Literal]; ok {
-            $$ = &ast.Boolean{
+            $$ = &ast.BooleanLiteral{
                 Token: $1,
                 Value: v,
             }
         } else if $1.Literal == "nil" {
-            $$ = &ast.Nil{
+            $$ = &ast.NilLiteral{
                 Token: $1,
             }
         } else {
