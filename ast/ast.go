@@ -1,254 +1,301 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+
+// Package ast declares the types used to represent syntax trees for Rose
+// packages.
+
 package ast
 
 import (
-	"bytes"
-
 	"github.com/capnspacehook/rose/token"
 )
 
-// The base Node interface
+// -----------------------------------------------------------------------------
+// Interfaces
+//
+// There are 3 main classes of nodes: Expressions and type nodes,
+// statement nodes, and declaration nodes. The node names usually
+// match the corresponding Go spec production names to which they
+// correspond. The node fields correspond to the individual parts
+// of the respective productions.
+//
+// All nodes contain position information marking the beginning of
+// the corresponding source text segment; it is accessible via the
+// Pos accessor method. Nodes may contain additional position info
+// for language constructs where comments may be found between parts
+// of the construct (typically any larger, parenthesized subpart).
+// That position information is needed to properly position comments
+// when printing the construct.
+
+// All node types implement the Node interface.
 type Node interface {
-	TokenLiteral() string
-	String() string
+	Pos() token.Pos // position of first character belonging to the node
+	End() token.Pos // position of first character immediately after the node
 }
 
-// All statement nodes implement this
-type Statement interface {
+// All statement nodes implement the Stmt interface.
+type Stmt interface {
 	Node
-	statementNode()
+	stmtNode()
 }
 
-// All expression nodes implement this
-type Expression interface {
+// All declaration nodes implement the Decl interface.
+type Decl interface {
 	Node
-	expressionNode()
+	declNode()
 }
 
-//
-// Abstract Nodes
-//
-
-type Program struct {
-	Statements []Statement
+// All expression nodes implement the Expr interface.
+type Expr interface {
+	Node
+	exprNode()
 }
 
-func (p *Program) TokenLiteral() string { return "" }
-func (p *Program) String() string {
-	var buf bytes.Buffer
+// -----------------------------------------------------------------------------
+// Expressions and types
 
-	for _, statement := range p.Statements {
-		buf.WriteString(statement.String())
+// A BadExpr node is a placeholder for expressions containing
+// syntax errors for which no correct expression nodes can be
+// created.
+type BadExpr struct {
+	From, To token.Pos // position range of bad expression
+}
+
+// An Ident node represents an identifier.
+type Ident struct {
+	NamePos token.Pos // identifier position
+	Name    string    // identifier name
+}
+
+// A BasicLit node represents a literal of basic type.
+type BasicLit struct {
+	ValuePos token.Pos   // literal position
+	Kind     token.Token // token.INT, token.FLOAT, token.CHAR, token.STRING, or token.RAW_STRING
+	Value    string      // literal string; e.g. 42, 0x7f, 3.14, 1e-9, 2.4i, 'a', '\x7f', "foo" or `\m\n\o`
+}
+
+// A ParenExpr node represents a parenthesized expression.
+type ParenExpr struct {
+	Lparen token.Pos // position of "("
+	Expr   Expr      // parenthesized expression
+	Rparen token.Pos // position of ")"
+}
+
+// A UnaryExpr node represents a unary expression.
+type UnaryExpr struct {
+	OpPos token.Pos   // position of Op
+	Op    token.Token // operator
+	Expr  Expr        // operand
+}
+
+// A BinaryExpr node represents a binary expression.
+type BinaryExpr struct {
+	Lhs   Expr        // left operand
+	OpPos token.Pos   // position of Op
+	Op    token.Token // operator
+	Rhs   Expr        // right operand
+}
+
+// Pos and End implementations for expression/type nodes.
+func (x *BadExpr) Pos() token.Pos    { return x.From }
+func (x *Ident) Pos() token.Pos      { return x.NamePos }
+func (x *BasicLit) Pos() token.Pos   { return x.ValuePos }
+func (x *ParenExpr) Pos() token.Pos  { return x.Lparen }
+func (x *UnaryExpr) Pos() token.Pos  { return x.OpPos }
+func (x *BinaryExpr) Pos() token.Pos { return x.Lhs.Pos() }
+
+func (x *BadExpr) End() token.Pos    { return x.To }
+func (x *Ident) End() token.Pos      { return token.Pos(int(x.NamePos) + len(x.Name)) }
+func (x *BasicLit) End() token.Pos   { return token.Pos(int(x.ValuePos) + len(x.Value)) }
+func (x *ParenExpr) End() token.Pos  { return x.Rparen + 1 }
+func (x *UnaryExpr) End() token.Pos  { return x.Expr.End() }
+func (x *BinaryExpr) End() token.Pos { return x.Rhs.End() }
+
+// exprNode() ensures that only expression/type nodes can be
+// assigned to an Expr.
+func (*BadExpr) exprNode()    {}
+func (*Ident) exprNode()      {}
+func (*BasicLit) exprNode()   {}
+func (*ParenExpr) exprNode()  {}
+func (*UnaryExpr) exprNode()  {}
+func (*BinaryExpr) exprNode() {}
+
+// -----------------------------------------------------------------------------
+// Convenience functions for Idents
+
+// IsExported reports whether name starts with an upper-case letter.
+func IsExported(name string) bool { return token.IsExported(name) }
+
+// IsExported reports whether id starts with an upper-case letter.
+func (id *Ident) IsExported() bool { return token.IsExported(id.Name) }
+
+func (id *Ident) String() string {
+	if id != nil {
+		return id.Name
 	}
-
-	return buf.String()
+	return "<nil>"
 }
 
-type TypeName struct {
-	Token token.Token
-}
-
-func (tn *TypeName) TokenLiteral() string { return tn.Token.Literal }
-func (tn *TypeName) String() string       { return tn.Token.Literal }
-
-//
+// -----------------------------------------------------------------------------
 // Statements
+
+// A statement is represented by a tree consisting of one
+// or more of the following concrete statement nodes.
+
+// A BadStmt node is a placeholder for statements containing
+// syntax errors for which no correct statement nodes can be
+// created.
+type BadStmt struct {
+	From, To token.Pos // position range of bad statement
+}
+
+// A DeclStmt node represents a declaration in a statement list.
+type DeclStmt struct {
+	Decl Decl // *GenDecl with CONST, TYPE, or VAR token
+}
+
+// An EmptyStmt node represents an empty statement.
+// The "position" of the empty statement is the position
+// of the immediately following (explicit or implicit) semicolon.
+type EmptyStmt struct {
+	Semicolon token.Pos // position of following ";"
+	Implicit  bool      // if set, ";" was omitted in the source
+}
+
+// An ExprStmt node represents a (stand-alone) expression
+// in a statement list.
+type ExprStmt struct {
+	Expr Expr // expression
+}
+
+// An IncDecStmt node represents an increment or decrement statement.
+type IncDecStmt struct {
+	Expr   Expr
+	TokPos token.Pos   // position of Tok
+	Tok    token.Token // INC or DEC
+}
+
+// An AssignStmt node represents an assignment or
+// a short variable declaration.
+type AssignStmt struct {
+	Lhs    []Expr
+	TokPos token.Pos   // position of Tok
+	Tok    token.Token // assignment token, DEFINE
+	Rhs    []Expr
+}
+
+// Pos and End implementations for statement nodes.
+
+func (s *BadStmt) Pos() token.Pos    { return s.From }
+func (s *DeclStmt) Pos() token.Pos   { return s.Decl.Pos() }
+func (s *EmptyStmt) Pos() token.Pos  { return s.Semicolon }
+func (s *ExprStmt) Pos() token.Pos   { return s.Expr.Pos() }
+func (s *IncDecStmt) Pos() token.Pos { return s.Expr.Pos() }
+func (s *AssignStmt) Pos() token.Pos { return s.Lhs[0].Pos() }
+
+func (s *BadStmt) End() token.Pos  { return s.To }
+func (s *DeclStmt) End() token.Pos { return s.Decl.End() }
+func (s *EmptyStmt) End() token.Pos {
+	if s.Implicit {
+		return s.Semicolon
+	}
+	return s.Semicolon + 1 /* len(";") */
+}
+func (s *ExprStmt) End() token.Pos { return s.Expr.End() }
+func (s *IncDecStmt) End() token.Pos {
+	return s.TokPos + 2 /* len("++") */
+}
+func (s *AssignStmt) End() token.Pos { return s.Rhs[len(s.Rhs)-1].End() }
+
+// stmtNode() ensures that only statement nodes can be
+// assigned to a Stmt.
+func (*BadStmt) stmtNode()    {}
+func (*DeclStmt) stmtNode()   {}
+func (*EmptyStmt) stmtNode()  {}
+func (*ExprStmt) stmtNode()   {}
+func (*IncDecStmt) stmtNode() {}
+func (*AssignStmt) stmtNode() {}
+
+// -----------------------------------------------------------------------------
+// Declarations
+
+// A Spec node represents a single (non-parenthesized) import,
+// constant, type, or variable declaration.
+
+// The Spec type stands for any of *ImportSpec, *ValueSpec, and *TypeSpec.
+type Spec interface {
+	Node
+	specNode()
+}
+
+// A ValueSpec node represents a constant or variable declaration
+// (ConstSpec or VarSpec production).
+type ValueSpec struct {
+	//Doc     *CommentGroup // associated documentation; or nil
+	Names  []*Ident // value names (len(Names) > 0)
+	Type   Expr     // value type; or nil
+	Values []Expr   // initial values; or nil
+	//Comment *CommentGroup // line comments; or nil
+}
+
+// Pos and End implementations for spec nodes.
+
+func (s *ValueSpec) Pos() token.Pos { return s.Names[0].Pos() }
+func (s *ValueSpec) End() token.Pos {
+	if n := len(s.Values); n > 0 {
+		return s.Values[n-1].End()
+	}
+	if s.Type != nil {
+		return s.Type.End()
+	}
+	return s.Names[len(s.Names)-1].End()
+}
+
+// specNode() ensures that only spec nodes can be
+// assigned to a Spec.
+func (*ValueSpec) specNode() {}
+
+// A declaration is represented by one of the following declaration nodes.
+
+// A BadDecl node is a placeholder for declarations containing
+// syntax errors for which no correct declaration nodes can be
+// created.
+type BadDecl struct {
+	From, To token.Pos // position range of bad declaration
+}
+
+// A GenDecl node (generic declaration node) represents an import,
+// constant, type or variable declaration. A valid Lparen position
+// (Lparen.IsValid()) indicates a parenthesized declaration.
 //
-
-type ExprStatement struct {
-	Expr Expression
-}
-
-func (es *ExprStatement) statementNode()       {}
-func (es *ExprStatement) TokenLiteral() string { return es.Expr.TokenLiteral() }
-func (es *ExprStatement) String() string       { return es.Expr.String() }
-
-type VarDeclStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Type  *TypeName
-	Value Expression
-}
-
-func (vs *VarDeclStatement) statementNode()       {}
-func (vs *VarDeclStatement) TokenLiteral() string { return vs.Token.Literal }
-func (vs *VarDeclStatement) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(vs.TokenLiteral() + " ")
-	out.WriteString(vs.Name.String())
-	if vs.Type != nil {
-		out.WriteString(" " + vs.Type.String())
-	}
-	out.WriteString(" = ")
-
-	if vs.Value != nil {
-		out.WriteString(vs.Value.String())
-	}
-
-	return out.String()
-}
-
-type ConstDeclStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Type  *TypeName
-	Value Expression
-}
-
-func (cs *ConstDeclStatement) statementNode()       {}
-func (cs *ConstDeclStatement) TokenLiteral() string { return cs.Token.Literal }
-func (cs *ConstDeclStatement) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(cs.TokenLiteral() + " ")
-	out.WriteString(cs.Name.String())
-	if cs.Type != nil {
-		out.WriteString(" " + cs.Type.String())
-	}
-	out.WriteString(" = ")
-
-	if cs.Value != nil {
-		out.WriteString(cs.Value.String())
-	}
-
-	return out.String()
-}
-
-type AssignmentStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Value Expression
-}
-
-func (as *AssignmentStatement) statementNode()       {}
-func (as *AssignmentStatement) TokenLiteral() string { return as.Token.Literal }
-func (as *AssignmentStatement) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(as.Name.String())
-	out.WriteString(" " + as.TokenLiteral() + " ")
-
-	if as.Value != nil {
-		out.WriteString(as.Value.String())
-	}
-
-	return out.String()
-}
-
+// Relationship between Tok value and Specs element type:
 //
-// Expressions
-//
-
-type NilLiteral struct {
-	Token token.Token
+//	token.IMPORT  *ImportSpec
+//	token.CONST   *ValueSpec
+//	token.TYPE    *TypeSpec
+//	token.VAR     *ValueSpec
+type GenDecl struct {
+	//Doc    *CommentGroup // associated documentation; or nil
+	TokPos token.Pos   // position of Tok
+	Tok    token.Token // IMPORT, CONST, TYPE, VAR
+	Lparen token.Pos   // position of '(', if any
+	Specs  []Spec
+	Rparen token.Pos // position of ')', if any
 }
 
-func (nl *NilLiteral) expressionNode()      {}
-func (nl *NilLiteral) TokenLiteral() string { return nl.Token.Literal }
-func (nl *NilLiteral) String() string       { return nl.Token.Literal }
+// Pos and End implementations for declaration nodes.
 
-type BooleanLiteral struct {
-	Token token.Token
-	Value bool
+func (d *BadDecl) Pos() token.Pos { return d.From }
+func (d *GenDecl) Pos() token.Pos { return d.TokPos }
+
+func (d *BadDecl) End() token.Pos { return d.To }
+func (d *GenDecl) End() token.Pos {
+	if d.Rparen.IsValid() {
+		return d.Rparen + 1
+	}
+	return d.Specs[0].End()
 }
 
-func (bl *BooleanLiteral) expressionNode()      {}
-func (bl *BooleanLiteral) TokenLiteral() string { return bl.Token.Literal }
-func (bl *BooleanLiteral) String() string       { return bl.Token.Literal }
-
-type IntegerLiteral struct {
-	Token token.Token
-	Value int64
-}
-
-func (il *IntegerLiteral) expressionNode()      {}
-func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
-func (il *IntegerLiteral) String() string       { return il.Token.Literal }
-
-type FloatLiteral struct {
-	Token token.Token
-	Value float64
-}
-
-func (fl *FloatLiteral) expressionNode()      {}
-func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Literal }
-func (fl *FloatLiteral) String() string       { return fl.Token.Literal }
-
-type CharLiteral struct {
-	Token token.Token
-	Value rune
-}
-
-func (cl *CharLiteral) expressionNode()      {}
-func (cl *CharLiteral) TokenLiteral() string { return cl.Token.Literal }
-func (cl *CharLiteral) String() string       { return cl.Token.Literal }
-
-type StringLiteral struct {
-	Token token.Token
-}
-
-func (sl *StringLiteral) expressionNode()      {}
-func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
-func (sl *StringLiteral) String() string       { return sl.Token.Literal }
-
-type RawStringLiteral struct {
-	Token token.Token
-}
-
-func (rl *RawStringLiteral) expressionNode()      {}
-func (rl *RawStringLiteral) TokenLiteral() string { return rl.Token.Literal }
-func (rl *RawStringLiteral) String() string       { return rl.Token.Literal }
-
-type Identifier struct {
-	Token token.Token // the token.IDENT token
-}
-
-func (i *Identifier) expressionNode()      {}
-func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
-func (i *Identifier) String() string       { return i.Token.Literal }
-
-type ParenExpression struct {
-	Lparen token.Token
-	Expr   Expression
-	Rparen token.Token
-}
-
-func (pe *ParenExpression) expressionNode()      {}
-func (pe *ParenExpression) TokenLiteral() string { return pe.Lparen.Literal }
-func (pe *ParenExpression) String() string {
-	return "(" + pe.Expr.String() + ")"
-}
-
-type UnaryExpression struct {
-	Token token.Token
-	Value Expression
-}
-
-func (ue *UnaryExpression) expressionNode()      {}
-func (ue *UnaryExpression) TokenLiteral() string { return ue.Token.Literal }
-func (ue *UnaryExpression) String() string {
-	return ue.Token.Literal + ue.Value.String()
-}
-
-type BinaryExpression struct {
-	Lhs   Expression
-	Token token.Token
-	Rhs   Expression
-}
-
-func (be *BinaryExpression) expressionNode()      {}
-func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
-func (be *BinaryExpression) String() string {
-	return be.Lhs.String() + " " + be.Token.Literal + " " + be.Rhs.String()
-}
-
-type Conversion struct {
-	Type  *TypeName
-	Value Expression
-}
-
-func (c *Conversion) expressionNode()      {}
-func (c *Conversion) TokenLiteral() string { return c.Type.TokenLiteral() }
-func (c *Conversion) String() string {
-	return c.Type.String() + "(" + c.Value.String() + ")"
-}
+// declNode() ensures that only declaration nodes can be
+// assigned to a Decl.
+func (*BadDecl) declNode() {}
+func (*GenDecl) declNode() {}
