@@ -8,7 +8,7 @@ import (
 	"github.com/capnspacehook/rose/token"
 )
 
-type lexer struct {
+type Lexer struct {
 	file       *token.File // source file handle
 	errors     ErrorList   // lexing errors
 	insertSemi bool        // insert a semicolon before next newline
@@ -16,7 +16,7 @@ type lexer struct {
 	scanner scanner.Scanner // scanner that does much of the heavy lifting
 }
 
-func (lx *lexer) Init(file *token.File, src io.Reader, srcLen int) {
+func (lx *Lexer) Init(file *token.File, src io.Reader, srcLen int) {
 	if file.Size() != srcLen {
 		panic(fmt.Sprintf("file size (%d) does not match src len (%d)", file.Size(), srcLen))
 	}
@@ -34,7 +34,7 @@ func (lx *lexer) Init(file *token.File, src io.Reader, srcLen int) {
 	}
 }
 
-func (lx *lexer) Lex() (pos token.Pos, tok token.Token, lit string) {
+func (lx *Lexer) Lex() (pos token.Pos, tok token.Token, lit string) {
 lexAgain:
 	ch := lx.scanner.Scan()
 	pos = lx.currentPos()
@@ -253,18 +253,18 @@ lexAgain:
 	return
 }
 
-func (lx *lexer) currentPos() token.Pos {
+func (lx *Lexer) currentPos() token.Pos {
 	return lx.file.Pos(lx.scanner.Offset)
 }
 
-func (lx *lexer) Err() error {
+func (lx *Lexer) Err() error {
 	return lx.errors.Err()
 }
 
-func (lx *lexer) error(msg string) {
+func (lx *Lexer) error(msg string) {
 	lx.errors.Add(lx.scanner.Pos(), msg)
 }
 
-func (lx *lexer) errorf(format string, args ...interface{}) {
+func (lx *Lexer) errorf(format string, args ...interface{}) {
 	lx.error(fmt.Sprintf(format, args...))
 }
