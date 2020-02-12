@@ -50,8 +50,8 @@ lexAgain:
 
 	switch ch {
 	case scanner.Ident:
-		tok = token.IDENT
 		lit = lx.scanner.TokenText()
+		tok = token.Lookup(lit)
 	case scanner.Int:
 		lx.insertSemi = true
 		tok = token.INT
