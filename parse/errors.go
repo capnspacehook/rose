@@ -1,6 +1,4 @@
 // Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
 
 package parse
 
@@ -16,7 +14,6 @@ import (
 // The position Pos, if valid, points to the beginning of
 // the offending token, and the error condition is described
 // by Msg.
-//
 type Error struct {
 	Pos scanner.Position
 	Msg string
@@ -34,7 +31,6 @@ func (e Error) Error() string {
 
 // ErrorList is a list of *Errors.
 // The zero value for an ErrorList is an empty ErrorList ready to use.
-//
 type ErrorList []*Error
 
 // Add adds an Error with given position and error message to an ErrorList.
@@ -70,7 +66,6 @@ func (p ErrorList) Less(i, j int) bool {
 // Sort sorts an ErrorList. *Error entries are sorted by position,
 // other errors are sorted by error message, and before any *Error
 // entry.
-//
 func (p ErrorList) Sort() {
 	sort.Sort(p)
 }
@@ -113,7 +108,6 @@ func (p ErrorList) Err() error {
 // PrintError is a utility function that prints a list of errors to w,
 // one error per line, if the err parameter is an ErrorList. Otherwise
 // it prints the err string.
-//
 func PrintError(w io.Writer, err error) {
 	if list, ok := err.(ErrorList); ok {
 		for _, e := range list {

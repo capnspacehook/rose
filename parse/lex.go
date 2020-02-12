@@ -5,328 +5,266 @@ import (
 	"io"
 	"text/scanner"
 
-	"github.com/capnspacehook/rose/ast"
 	"github.com/capnspacehook/rose/token"
 )
 
 type lexer struct {
-	errors     ErrorList
-	insertSemi bool
+	file       *token.File // source file handle
+	errors     ErrorList   // lexing errors
+	insertSemi bool        // insert a semicolon before next newline
 
-	scanner scanner.Scanner
-
-	Program *ast.Program
+	scanner scanner.Scanner // scanner that does much of the heavy lifting
 }
 
-func newLexer(in io.Reader) *lexer {
-	var l lexer
-
-	l.scanner.Init(in)
-	l.scanner.Mode = scanner.ScanInts | scanner.GoTokens
-	l.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
-	l.scanner.Error = func(s *scanner.Scanner, msg string) {
-		l.Error(msg)
+func (lx *lexer) Init(file *token.File, src io.Reader, srcLen int) {
+	if file.Size() != srcLen {
+		panic(fmt.Sprintf("file size (%d) does not match src len (%d)", file.Size(), srcLen))
 	}
 
-	return &l
+	// explicitly initialize all fields since a scanner may be reused
+	lx.file = file
+	lx.errors = ErrorList{}
+	lx.insertSemi = false
+
+	lx.scanner.Init(src)
+	lx.scanner.Mode = scanner.ScanInts | scanner.GoTokens
+	lx.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
+	lx.scanner.Error = func(s *scanner.Scanner, msg string) {
+		lx.error(msg)
+	}
 }
 
-func (lx *lexer) Lex(yy *yySymType) int {
-Scan:
-	tok := lx.scanner.Scan()
+func (lx *lexer) Lex() (pos token.Pos, tok token.Token, lit string) {
+lexAgain:
+	ch := lx.scanner.Scan()
+	pos = lx.currentPos()
 
-	if tok == '\n' {
+	if ch == '\n' {
 		if lx.insertSemi {
 			lx.insertSemi = false
-			return SEMICOLON
+			return pos, token.SEMICOLON, "\n"
 		}
 
-		goto Scan
+		goto lexAgain
 	}
 
-	switch tok {
+	switch ch {
 	case scanner.Ident:
-		tokText := lx.scanner.TokenText()
-		tokType := token.Lookup(tokText)
-
-		switch tokType {
-		case token.CONST:
-			yy.tok = token.NewToken(token.CONST, lx.scanner.Pos())
-			return CONST
-		case token.LET:
-			yy.tok = token.NewToken(token.LET, lx.scanner.Pos())
-			return LET
-		case token.LAND:
-			yy.tok = token.NewToken(token.LAND, lx.scanner.Pos())
-			return LAND
-		case token.LOR:
-			yy.tok = token.NewToken(token.LOR, lx.scanner.Pos())
-			return LOR
-		case token.NOT:
-			yy.tok = token.NewToken(token.NOT, lx.scanner.Pos())
-			return NOT
-		case token.VAR:
-			yy.tok = token.NewToken(token.VAR, lx.scanner.Pos())
-			return VAR
-		}
-
-		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.IDENT, Pos: lx.scanner.Pos(), Literal: tokText}
-		return IDENT
+		tok = token.IDENT
+		lit = lx.scanner.TokenText()
 	case scanner.Int:
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.INT, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
-		return INT
+		tok = token.INT
+		lit = lx.scanner.TokenText()
 	case scanner.Float:
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.FLOAT, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
-		return FLOAT
+		tok = token.FLOAT
+		lit = lx.scanner.TokenText()
 	case scanner.Char:
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.CHAR, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
-		return CHAR
+		tok = token.CHAR
+		lit = lx.scanner.TokenText()
 	case scanner.String: // TODO: handle string expressions
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
-		return STRING
+		tok = token.STRING
+		lit = lx.scanner.TokenText()
 	case scanner.RawString:
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.RAW_STRING, Pos: lx.scanner.Pos(), Literal: lx.scanner.TokenText()}
-		return RAW_STRING
+		tok = token.RAW_STRING
+		lit = lx.scanner.TokenText()
 	case '+':
-		pTok := lx.scanner.Peek()
-		if pTok == '+' {
+		pCh := lx.scanner.Peek()
+		if pCh == '+' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.INC, Pos: lx.scanner.Pos(), Literal: "++"}
-			return INC
-		} else if pTok == '=' {
+			return lx.currentPos(), token.INC, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.ADD_ASSIGN, Pos: lx.scanner.Pos(), Literal: "+="}
-			return ADD_ASSIGN
+			return lx.currentPos(), token.ADD_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.ADD, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return ADD
+		tok = token.ADD
 	case '-':
-		pTok := lx.scanner.Peek()
-		if pTok == '-' {
+		pCh := lx.scanner.Peek()
+		if pCh == '-' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.DEC, Pos: lx.scanner.Pos(), Literal: "--"}
-			return DEC
-		} else if pTok == '=' {
+			return lx.currentPos(), token.DEC, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.SUB_ASSIGN, Pos: lx.scanner.Pos(), Literal: "-="}
-			return SUB_ASSIGN
+			return lx.currentPos(), token.SUB_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.SUB, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return SUB
+		tok = token.SUB
 	case '*':
-		pTok := lx.scanner.Peek()
-		if pTok == '*' {
+		pCh := lx.scanner.Peek()
+		if pCh == '*' {
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				yy.tok = token.Token{Type: token.EXP_ASSIGN, Pos: lx.scanner.Pos(), Literal: "**="}
-				return EXP_ASSIGN
+				return lx.currentPos(), token.EXP_ASSIGN, ""
 			}
 
-			yy.tok = token.Token{Type: token.EXP, Pos: lx.scanner.Pos(), Literal: "**"}
-			return EXP
-		} else if pTok == '=' {
+			return lx.currentPos(), token.EXP, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.MUL_ASSIGN, Pos: lx.scanner.Pos(), Literal: "*="}
-			return MUL_ASSIGN
+			return lx.currentPos(), token.MUL_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.MUL, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return MUL
+		tok = token.MUL
 	case '/':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.QUO_ASSIGN, Pos: lx.scanner.Pos(), Literal: "/="}
-			return QUO_ASSIGN
+			return lx.currentPos(), token.QUO_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.QUO, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return QUO
+		tok = token.QUO
 	case '%':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.REM_ASSIGN, Pos: lx.scanner.Pos(), Literal: "%="}
-			return REM_ASSIGN
+			return lx.currentPos(), token.REM_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.REM, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return REM
+		tok = token.REM
 	case '&':
-		pTok := lx.scanner.Peek()
-		if pTok == '^' {
+		pCh := lx.scanner.Peek()
+		if pCh == '^' {
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				yy.tok = token.Token{Type: token.AND_NOT_ASSIGN, Pos: lx.scanner.Pos(), Literal: "&^"}
-				return AND_NOT_ASSIGN
+				return lx.currentPos(), token.AND_NOT_ASSIGN, ""
 			}
 
-			yy.tok = token.Token{Type: token.AND_NOT, Pos: lx.scanner.Pos(), Literal: "&^"}
-			return AND_NOT
-		} else if pTok == '=' {
+			return lx.currentPos(), token.AND_NOT, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.AND_ASSIGN, Pos: lx.scanner.Pos(), Literal: "&="}
-			return AND_ASSIGN
+			return lx.currentPos(), token.AND_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.AND, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return AND
+		tok = token.AND
 	case '|':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.OR_ASSIGN, Pos: lx.scanner.Pos(), Literal: "|="}
-			return OR_ASSIGN
+			return lx.currentPos(), token.OR_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.OR, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return OR
+		tok = token.OR
 	case '^':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.XOR_ASSIGN, Pos: lx.scanner.Pos(), Literal: "^="}
-			return XOR_ASSIGN
+			return lx.currentPos(), token.XOR_ASSIGN, ""
 		}
 
-		yy.tok = token.Token{Type: token.XOR, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return XOR
+		tok = token.XOR
 	case '~':
-		yy.tok = token.Token{Type: token.INVT, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return INVT
+		tok = token.INVT
 	case '<':
-		pTok := lx.scanner.Peek()
-		if pTok == '<' {
+		pCh := lx.scanner.Peek()
+		if pCh == '<' {
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				yy.tok = token.Token{Type: token.SHL_ASSIGN, Pos: lx.scanner.Pos(), Literal: "<<="}
-				return SHL_ASSIGN
+				return lx.currentPos(), token.SHL_ASSIGN, ""
 			}
 
-			yy.tok = token.Token{Type: token.SHL, Pos: lx.scanner.Pos(), Literal: "<<"}
-			return SHL
-		} else if pTok == '-' {
+			return lx.currentPos(), token.SHL, ""
+		} else if pCh == '-' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.ARROW, Pos: lx.scanner.Pos(), Literal: "<-"}
-			return ARROW
-		} else if pTok == '=' {
+			return lx.currentPos(), token.ARROW, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.LEQ, Pos: lx.scanner.Pos(), Literal: "<="}
-			return LEQ
+			return lx.currentPos(), token.LEQ, ""
 		}
 
-		yy.tok = token.Token{Type: token.LSS, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return LSS
+		tok = token.LSS
 	case '>':
-		pTok := lx.scanner.Peek()
-		if pTok == '>' {
+		pCh := lx.scanner.Peek()
+		if pCh == '>' {
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				yy.tok = token.Token{Type: token.SHR_ASSIGN, Pos: lx.scanner.Pos(), Literal: ">>="}
-				return SHR_ASSIGN
+				return lx.currentPos(), token.SHR_ASSIGN, ""
 			}
-			yy.tok = token.Token{Type: token.SHR, Pos: lx.scanner.Pos(), Literal: ">>"}
-			return SHR
-		} else if pTok == '=' {
+
+			return lx.currentPos(), token.SHR, ""
+		} else if pCh == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.GEQ, Pos: lx.scanner.Pos(), Literal: ">="}
-			return GEQ
+			return lx.currentPos(), token.GEQ, ""
 		}
 
-		yy.tok = token.Token{Type: token.GTR, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return GTR
+		tok = token.GTR
 	case '=':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.EQL, Pos: lx.scanner.Pos(), Literal: "=="}
-			return EQL
+			return lx.currentPos(), token.EQL, ""
 		}
 
-		yy.tok = token.Token{Type: token.ASSIGN, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return ASSIGN
+		tok = token.ASSIGN
 	case '(':
-		yy.tok = token.Token{Type: token.LPAREN, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return LPAREN
+		tok = token.LPAREN
 	case '[':
-		yy.tok = token.Token{Type: token.LBRACK, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return LBRACK
+		tok = token.LBRACK
 	case '{':
-		yy.tok = token.Token{Type: token.LBRACE, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return LBRACE
+		tok = token.LBRACE
 	case ',':
-		yy.tok = token.Token{Type: token.COMMA, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return COMMA
+		tok = token.COMMA
 	case '.':
 		if lx.scanner.Peek() == '.' {
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '.' {
 				lx.scanner.Next()
-				yy.tok = token.Token{Type: token.ELLIPSIS, Pos: lx.scanner.Pos(), Literal: "..."}
-				return ELLIPSIS
+				return lx.currentPos(), token.ELLIPSIS, ""
 			}
 		}
 
-		yy.tok = token.Token{Type: token.PERIOD, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return PERIOD
+		tok = token.PERIOD
 	case ')':
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.RPAREN, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return RPAREN
+		tok = token.RPAREN
 	case ']':
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.RBRACK, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return RBRACK
+		tok = token.RBRACK
 	case '}':
 		lx.insertSemi = true
-		yy.tok = token.Token{Type: token.RBRACE, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return RBRACE
+		tok = token.RBRACE
 	case ';':
 		lx.insertSemi = false
-		yy.tok = token.Token{Type: token.SEMICOLON, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return SEMICOLON
+		tok = token.SEMICOLON
 	case ':':
-		yy.tok = token.Token{Type: token.COLON, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return COLON
+		tok = token.COLON
 	case '?':
-		yy.tok = token.Token{Type: token.QUES, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return QUES
+		tok = token.QUES
 	case '!':
 		if lx.scanner.Peek() == '=' {
 			lx.scanner.Next()
-			yy.tok = token.Token{Type: token.NEQ, Pos: lx.scanner.Pos(), Literal: "!="}
-			return NEQ
+			return lx.currentPos(), token.NEQ, ""
 		}
 
-		yy.tok = token.Token{Type: token.EXCLM, Pos: lx.scanner.Pos(), Literal: string(tok)}
-		return EXCLM
+		tok = token.EXCLM
 	case scanner.EOF:
 		if lx.insertSemi {
 			lx.insertSemi = false
-			return SEMICOLON
+			tok = token.SEMICOLON
+		} else {
+			tok = token.EOF
 		}
-
-		return 0
+	default:
+		lx.errorf("illegal character %#U", ch)
 	}
 
-	return int(tok)
+	return
+}
+
+func (lx *lexer) currentPos() token.Pos {
+	return lx.file.Pos(lx.scanner.Offset)
 }
 
 func (lx *lexer) Err() error {
 	return lx.errors.Err()
 }
 
-func (lx *lexer) Error(msg string) {
+func (lx *lexer) error(msg string) {
 	lx.errors.Add(lx.scanner.Pos(), msg)
 }
 
-func (lx *lexer) Errorf(format string, args ...interface{}) {
-	lx.Error(fmt.Sprintf(format, args...))
+func (lx *lexer) errorf(format string, args ...interface{}) {
+	lx.error(fmt.Sprintf(format, args...))
 }

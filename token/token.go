@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	operatorWords map[string]Token
-	keywords      map[string]Token
+	operatorWords = make(map[string]Token)
+	keywords      = make(map[string]Token)
 )
 
 func init() {
@@ -21,7 +21,6 @@ func init() {
 	operatorWords[tokens[LOR]] = LOR
 	operatorWords[tokens[NOT]] = NOT
 
-	keywords = make(map[string]Token)
 	for i := keyword_beg + 1; i < keyword_end; i++ {
 		keywords[tokens[i]] = i
 	}
@@ -248,9 +247,13 @@ func (op Token) Precedence() int {
 	return LowestPrec
 }
 
-// Lookup maps an identifier to its keyword token or IDENT (if not a keyword).
+// Lookup maps an identifier to its keyword token, operator token
+// (if LAND, LOR, or NOT), or IDENT (if not a keyword).
 func Lookup(ident string) Token {
 	if tok, is_keyword := keywords[ident]; is_keyword {
+		return tok
+	}
+	if tok, is_operator := operatorWords[ident]; is_operator {
 		return tok
 	}
 
