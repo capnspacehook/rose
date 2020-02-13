@@ -64,6 +64,7 @@ type BadExpr struct {
 type Ident struct {
 	NamePos token.Pos // identifier position
 	Name    string    // identifier name
+	Obj     *Object   // denoted object; or nil
 }
 
 // A BasicLit node represents a literal of basic type.
@@ -299,3 +300,24 @@ func (d *GenDecl) End() token.Pos {
 // assigned to a Decl.
 func (*BadDecl) declNode() {}
 func (*GenDecl) declNode() {}
+
+// ----------------------------------------------------------------------------
+// Files and packages
+
+// A File node represents a Go source file.
+type File struct {
+	Package token.Pos // position of "package" keyword
+	Name    *Ident    // package name
+	Stmts   []Stmt    // top-level statements; or nil
+	Scope   *Scope    // package scope (this file only)
+	//Imports    []*ImportSpec   // imports in this file
+	Unresolved []*Ident // unresolved identifiers in this file
+}
+
+func (f *File) Pos() token.Pos { return f.Package }
+func (f *File) End() token.Pos {
+	if n := len(f.Stmts); n > 0 {
+		return f.Stmts[n-1].End()
+	}
+	return f.Name.End()
+}

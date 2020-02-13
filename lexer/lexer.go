@@ -27,6 +27,7 @@ func (lx *Lexer) Init(file *token.File, src io.Reader, srcLen int) {
 	lx.insertSemi = false
 
 	lx.scanner.Init(src)
+	lx.scanner.Filename = file.Name()
 	lx.scanner.Mode = scanner.ScanInts | scanner.GoTokens
 	lx.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
 	lx.scanner.Error = func(s *scanner.Scanner, msg string) {
@@ -64,7 +65,7 @@ lexAgain:
 		lx.insertSemi = true
 		tok = token.CHAR
 		lit = lx.scanner.TokenText()
-	case scanner.String: // TODO: handle string expressions
+	case scanner.String: // TODO: (capnspacehook) handle string expressions
 		lx.insertSemi = true
 		tok = token.STRING
 		lit = lx.scanner.TokenText()
