@@ -9,8 +9,10 @@
 - Any type can be a constant (except channels)
 - Inclusion of 'any' type
 - Optionals, Result types
+- Runtime constants with the 'let' keyword
+- Constant expressions
 
 ## Python
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE5ODY0ODEwMV19
+eyJoaXN0b3J5IjpbLTczNTIyOTg3MiwtMTk4NjQ4MTAxXX0=
 -->
