@@ -7,9 +7,10 @@
 - No labels, gotos
 - No empty interfaces
 - Any type can be a constant (except channels)
-- 
+- Inclusion of 'any' type
+- Optionals, Result types
 
 ## Python
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTM5OTQxMjQ4XX0=
+eyJoaXN0b3J5IjpbLTE5ODY0ODEwMV19
 -->
