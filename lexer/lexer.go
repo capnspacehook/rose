@@ -3,7 +3,9 @@ package lexer
 import (
 	"fmt"
 	"io"
+	"strings"
 	"text/scanner"
+	"unicode"
 
 	"github.com/capnspacehook/rose/token"
 )
@@ -13,14 +15,11 @@ type Lexer struct {
 	errors     ErrorList   // lexing errors
 	insertSemi bool        // insert a semicolon before next newline
 
+	strBuf  strings.Builder
 	scanner scanner.Scanner // scanner that does much of the heavy lifting
 }
 
-func (lx *Lexer) Init(file *token.File, src io.Reader, srcLen int) {
-	if file.Size() != srcLen {
-		panic(fmt.Sprintf("file size (%d) does not match src len (%d)", file.Size(), srcLen))
-	}
-
+func (lx *Lexer) Init(file *token.File, src io.Reader, scanComments bool) {
 	// explicitly initialize all fields since a scanner may be reused
 	lx.file = file
 	lx.errors = ErrorList{}
@@ -28,177 +27,172 @@ func (lx *Lexer) Init(file *token.File, src io.Reader, srcLen int) {
 
 	lx.scanner.Init(src)
 	lx.scanner.Filename = file.Name()
-	lx.scanner.Mode = scanner.ScanInts | scanner.GoTokens
+	lx.scanner.Mode = scanner.ScanInts | scanner.ScanFloats | scanner.ScanChars | scanner.ScanStrings | scanner.ScanRawStrings
 	lx.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
 	lx.scanner.Error = func(s *scanner.Scanner, msg string) {
 		lx.error(msg)
 	}
 }
 
-func (lx *Lexer) Lex() (pos token.Pos, tok token.Token, lit string) {
+func (lx *Lexer) Lex() (tok token.Token, lit string) {
 lexAgain:
 	ch := lx.scanner.Scan()
-	pos = lx.currentPos()
 
-	if ch == '\n' {
-		if lx.insertSemi {
-			lx.insertSemi = false
-			return pos, token.SEMICOLON, "\n"
-		}
-
-		goto lexAgain
-	}
-
+	insertSemi := false
 	switch ch {
-	case scanner.Ident:
-		lit = lx.scanner.TokenText()
-		tok = token.Lookup(lit)
 	case scanner.Int:
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.INT
 		lit = lx.scanner.TokenText()
 	case scanner.Float:
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.FLOAT
 		lit = lx.scanner.TokenText()
 	case scanner.Char:
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.CHAR
 		lit = lx.scanner.TokenText()
 	case scanner.String: // TODO: (capnspacehook) handle string expressions
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.STRING
 		lit = lx.scanner.TokenText()
 	case scanner.RawString:
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.RAW_STRING
 		lit = lx.scanner.TokenText()
 	case '+':
-		pCh := lx.scanner.Peek()
-		if pCh == '+' {
+		switch lx.scanner.Peek() {
+		case '+':
+			insertSemi = true
 			lx.scanner.Next()
-			return lx.currentPos(), token.INC, ""
-		} else if pCh == '=' {
+			tok = token.INC
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.ADD_ASSIGN, ""
+			tok = token.ADD_ASSIGN
+		default:
+			tok = token.ADD
 		}
-
-		tok = token.ADD
 	case '-':
-		pCh := lx.scanner.Peek()
-		if pCh == '-' {
+		switch lx.scanner.Peek() {
+		case '-':
+			insertSemi = true
 			lx.scanner.Next()
-			return lx.currentPos(), token.DEC, ""
-		} else if pCh == '=' {
+			tok = token.DEC
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.SUB_ASSIGN, ""
+			tok = token.SUB_ASSIGN
+		default:
+			tok = token.SUB
 		}
-
-		tok = token.SUB
 	case '*':
-		pCh := lx.scanner.Peek()
-		if pCh == '*' {
+		switch lx.scanner.Peek() {
+		case '*':
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				return lx.currentPos(), token.EXP_ASSIGN, ""
+				tok = token.EXP_ASSIGN
+			} else {
+				tok = token.EXP
 			}
-
-			return lx.currentPos(), token.EXP, ""
-		} else if pCh == '=' {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.MUL_ASSIGN, ""
+			tok = token.MUL_ASSIGN
+		default:
+			tok = token.MUL
 		}
-
-		tok = token.MUL
 	case '/':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.QUO_ASSIGN, ""
+			tok = token.QUO_ASSIGN
+		default:
+			tok = token.QUO
 		}
-
-		tok = token.QUO
 	case '%':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.REM_ASSIGN, ""
+			tok = token.REM_ASSIGN
+		default:
+			tok = token.REM
 		}
-
-		tok = token.REM
 	case '&':
-		pCh := lx.scanner.Peek()
-		if pCh == '^' {
+		switch lx.scanner.Peek() {
+		case '^':
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				return lx.currentPos(), token.AND_NOT_ASSIGN, ""
+				tok = token.AND_NOT_ASSIGN
+			} else {
+				tok = token.AND_NOT
 			}
-
-			return lx.currentPos(), token.AND_NOT, ""
-		} else if pCh == '=' {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.AND_ASSIGN, ""
+			tok = token.AND_ASSIGN
+		default:
+			tok = token.AND
 		}
-
-		tok = token.AND
 	case '|':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.OR_ASSIGN, ""
+			tok = token.OR_ASSIGN
+		default:
+			tok = token.OR
 		}
-
-		tok = token.OR
 	case '^':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.XOR_ASSIGN, ""
+			tok = token.XOR_ASSIGN
+		default:
+			tok = token.XOR
 		}
-
-		tok = token.XOR
 	case '~':
 		tok = token.INVT
 	case '<':
-		pCh := lx.scanner.Peek()
-		if pCh == '<' {
+		switch lx.scanner.Peek() {
+		case '<':
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				return lx.currentPos(), token.SHL_ASSIGN, ""
+				tok = token.SHL_ASSIGN
+			} else {
+				tok = token.SHL
 			}
-
-			return lx.currentPos(), token.SHL, ""
-		} else if pCh == '-' {
+		case '-':
 			lx.scanner.Next()
-			return lx.currentPos(), token.ARROW, ""
-		} else if pCh == '=' {
+			tok = token.ARROW
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.LEQ, ""
+			tok = token.LEQ
+		default:
+			tok = token.LSS
 		}
-
-		tok = token.LSS
 	case '>':
-		pCh := lx.scanner.Peek()
-		if pCh == '>' {
+		switch lx.scanner.Peek() {
+		case '>':
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '=' {
 				lx.scanner.Next()
-				return lx.currentPos(), token.SHR_ASSIGN, ""
+				tok = token.SHR_ASSIGN
+			} else {
+				tok = token.SHR
 			}
-
-			return lx.currentPos(), token.SHR, ""
-		} else if pCh == '=' {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.GEQ, ""
+			tok = token.GEQ
+		default:
+			tok = token.GTR
 		}
-
-		tok = token.GTR
 	case '=':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.EQL, ""
+			tok = token.EQL
+		default:
+			tok = token.ASSIGN
 		}
-
-		tok = token.ASSIGN
 	case '(':
 		tok = token.LPAREN
 	case '[':
@@ -208,54 +202,96 @@ lexAgain:
 	case ',':
 		tok = token.COMMA
 	case '.':
-		if lx.scanner.Peek() == '.' {
+		switch lx.scanner.Peek() {
+		case '.':
 			lx.scanner.Next()
 			if lx.scanner.Peek() == '.' {
 				lx.scanner.Next()
-				return lx.currentPos(), token.ELLIPSIS, ""
+				tok = token.ELLIPSIS
 			}
+		default:
+			tok = token.PERIOD
 		}
-
-		tok = token.PERIOD
 	case ')':
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.RPAREN
 	case ']':
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.RBRACK
 	case '}':
-		lx.insertSemi = true
+		insertSemi = true
 		tok = token.RBRACE
 	case ';':
-		lx.insertSemi = false
-		tok = token.SEMICOLON
+		insertSemi = false
+		tok = token.SEMI
+		lit = ";"
 	case ':':
 		tok = token.COLON
 	case '?':
 		tok = token.QUES
 	case '!':
-		if lx.scanner.Peek() == '=' {
+		switch lx.scanner.Peek() {
+		case '=':
 			lx.scanner.Next()
-			return lx.currentPos(), token.NEQ, ""
+			tok = token.NEQ
+		default:
+			tok = token.EXCLM
+		}
+	case '\n':
+		if lx.insertSemi {
+			lx.insertSemi = false
+			return token.SEMI, "\n"
 		}
 
-		tok = token.EXCLM
+		goto lexAgain
 	case scanner.EOF:
 		if lx.insertSemi {
 			lx.insertSemi = false
-			tok = token.SEMICOLON
-		} else {
-			tok = token.EOF
+			return token.SEMI, ""
 		}
+
+		tok = token.EOF
 	default:
-		lx.errorf("illegal character %#U", ch)
+		if lx.isIdentRune(ch, true) {
+			insertSemi = true
+			lit = lx.scanIdentifier(ch)
+			if len(lit) > 1 {
+				// keywords are longer than one letter - avoid lookup otherwise
+				switch tok = token.Lookup(lit); tok {
+				case token.IDENT, token.BREAK, token.CONTINUE, token.FALLTHROUGH, token.RETURN:
+					insertSemi = true
+				}
+			} else {
+				insertSemi = true
+				tok = token.IDENT
+			}
+		} else {
+			lx.errorf("illegal character %#U", ch)
+		}
 	}
+
+	lx.insertSemi = insertSemi
 
 	return
 }
 
-func (lx *Lexer) currentPos() token.Pos {
+func (lx *Lexer) Pos() token.Pos {
 	return lx.file.Pos(lx.scanner.Offset)
+}
+
+func (lx *Lexer) scanIdentifier(ch rune) string {
+	// we know the zero'th rune is OK; start scanning at the next one
+	lx.strBuf.WriteRune(ch)
+	for lx.isIdentRune(lx.scanner.Peek(), false) {
+		lx.strBuf.WriteRune(lx.scanner.Scan())
+	}
+	defer lx.strBuf.Reset()
+
+	return lx.strBuf.String()
+}
+
+func (lx *Lexer) isIdentRune(ch rune, firstRune bool) bool {
+	return ch == '_' || unicode.IsLetter(ch) || unicode.IsDigit(ch) && !firstRune
 }
 
 func (lx *Lexer) Err() error {

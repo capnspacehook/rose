@@ -99,11 +99,11 @@ const (
 	COMMA  // ,
 	PERIOD // .
 
-	RPAREN    // )
-	RBRACK    // ]
-	RBRACE    // }
-	SEMICOLON // ;
-	COLON     // :
+	RPAREN // )
+	RBRACK // ]
+	RBRACE // }
+	SEMI   // ;
+	COLON  // :
 
 	QUES  // ?
 	EXCLM // !
@@ -111,8 +111,13 @@ const (
 
 	keyword_beg
 	// Keywords
+	BREAK
 	CONST
+	CONTINUE
+	FALLTHROUGH
+	FN
 	LET
+	RETURN
 	VAR
 	keyword_end
 )
@@ -182,18 +187,23 @@ var tokens = [...]string{
 	COMMA:  ",",
 	PERIOD: ".",
 
-	RPAREN:    ")",
-	RBRACK:    "]",
-	RBRACE:    "}",
-	SEMICOLON: ";",
-	COLON:     ":",
+	RPAREN: ")",
+	RBRACK: "]",
+	RBRACE: "}",
+	SEMI:   ";",
+	COLON:  ":",
 
 	QUES:  "?",
 	EXCLM: "!",
 
-	CONST: "const",
-	LET:   "let",
-	VAR:   "var",
+	BREAK:       "break",
+	CONST:       "const",
+	CONTINUE:    "continue",
+	FALLTHROUGH: "fallthrough",
+	FN:          "fn",
+	LET:         "let",
+	RETURN:      "return",
+	VAR:         "var",
 }
 
 // String returns the string corresponding to the token tok.
