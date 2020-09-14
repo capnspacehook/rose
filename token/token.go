@@ -114,8 +114,10 @@ const (
 	BREAK
 	CONST
 	CONTINUE
+	ELSE
 	FALLTHROUGH
 	FN
+	IF
 	LET
 	RETURN
 	VAR
@@ -199,8 +201,10 @@ var tokens = [...]string{
 	BREAK:       "break",
 	CONST:       "const",
 	CONTINUE:    "continue",
+	ELSE:        "else",
 	FALLTHROUGH: "fallthrough",
 	FN:          "fn",
+	IF:          "if",
 	LET:         "let",
 	RETURN:      "return",
 	VAR:         "var",

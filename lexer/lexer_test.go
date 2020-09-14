@@ -23,9 +23,7 @@ if 5 < 9 {
 }
 
 [1, 2, 3]
-{7, 7, 8}
 {1: "one", 2: "two"};
-("tru", 8)
 l[2:5]
 `
 
@@ -68,6 +66,50 @@ l[2:5]
 		{token.SEMI, "\n"},
 		{token.RBRACE, ""},
 		{token.SEMI, "\n"},
+
+		{token.IF, "if"},
+		{token.INT, "5"},
+		{token.LSS, ""},
+		{token.INT, "9"},
+		{token.LBRACE, ""},
+		{token.RETURN, "return"},
+		{token.IDENT, "true"},
+		{token.SEMI, "\n"},
+		{token.RBRACE, ""},
+		{token.ELSE, "else"},
+		{token.LBRACE, ""},
+		{token.RETURN, "return"},
+		{token.IDENT, "false"},
+		{token.SEMI, "\n"},
+		{token.RBRACE, ""},
+		{token.SEMI, "\n"},
+
+		{token.LBRACK, ""},
+		{token.INT, "1"},
+		{token.COMMA, ""},
+		{token.INT, "2"},
+		{token.COMMA, ""},
+		{token.INT, "3"},
+		{token.RBRACK, ""},
+		{token.SEMI, "\n"},
+		{token.LBRACE, ""},
+		{token.INT, "1"},
+		{token.COLON, ""},
+		{token.STRING, `"one"`},
+		{token.COMMA, ""},
+		{token.INT, "2"},
+		{token.COLON, ""},
+		{token.STRING, `"two"`},
+		{token.RBRACE, ""},
+		{token.SEMI, ";"},
+		{token.IDENT, "l"},
+		{token.LBRACK, ""},
+		{token.INT, "2"},
+		{token.COLON, ""},
+		{token.INT, "5"},
+		{token.RBRACK, ""},
+		{token.SEMI, "\n"},
+		{token.EOF, ""},
 	}
 
 	var l Lexer

@@ -92,6 +92,8 @@ func (p ErrorList) Error() string {
 		return "no errors"
 	case 1:
 		return p[0].Error()
+	case 2:
+		return fmt.Sprintf("%s (and 1 more error)", p[0])
 	}
 	return fmt.Sprintf("%s (and %d more errors)", p[0], len(p)-1)
 }
