@@ -1,0 +1,459 @@
+Program
+    : PackageClause ImportDecl* TopLevelDecl+
+    ;
+
+PackageClause
+    : "package" identifier
+    ;
+
+ImportDecl
+    : "import" ( ImportSpec | "(" ImportSpec+ ")" )
+    ;
+
+ImportSpec
+    : PackageName? ImportPath
+    ;
+
+ImportPath
+    : string
+    ;
+
+TopLevelDecl
+    : Declaration
+    | FuncDecl
+    | MethodDecl
+    ;
+
+Declaration
+    : ConstDecl
+    | TypeDecl
+    | LetDecl
+    | VarDecl
+    ;
+
+ConstDecl
+    : "const" ( DeclSpec | "(" DeclSpec+ ")" )
+    ;
+
+DeclSpec
+    : IdentiferList Type? "=" ExpressionList ";"?
+    ;
+
+IdentiferList
+    : identifier ( "," identifier )*
+    ;
+
+ExpressionList
+    : Expression ( "," Expression )* ";"?
+    ;
+
+TypeDecl
+    : "type" ( TypeSpec | "(" TypeSpec+ ")" )
+    ;
+
+TypeSpec
+    : identifier Type ";"?
+    ;
+
+LetDecl
+    : "let" ( DeclSpec | "(" DeclSpec+ ")" )
+    ;
+
+VarDecl
+    : "var" ( VarSpec | "(" VarSpec+ ")" )
+    ;
+
+VarSpec
+    : IdentiferList Type ";"?
+    ;
+
+FuncDecl
+    : "func" identifier Signature Block
+    ;
+
+Signature
+    : Parameters Result?
+    ;
+
+Parameters
+    : ( "(" ParameterList ")" )?
+    ;
+
+ParameterList
+    : ParameterDecl ( "," ParameterDecl )+
+    ;
+
+ParameterDecl
+    : IdentiferList? "..."? Type
+    ;
+
+Result
+    : Parameters | Type
+    ;
+
+MethodDecl
+    : "func" Receiver identifier Signature Block
+    ;
+
+Receiver
+    : "(" identifier? Type ")"
+    ;
+
+Block
+    : "{" StatementList "}"
+    ;
+
+StatementList
+    : (Statement ";"? )+
+    ;
+
+Statement
+    : Declaration
+    | SimpleStmt
+    | GoStmt
+    | ReturnStmt
+    | BreakStmt
+    | ContinueStmt
+    | FallthroughStmt
+    | IfStmt
+    | SwitchStmt
+    | SelectStmt
+    | ForStmt
+    | DeferStmt
+    ;
+
+SimpleStmt
+    : EmptyStmt
+    | ExpressionStmt
+    | SendStmt
+    | IncDecStmt
+    | Assignment
+    | ShortVarDecl
+    ;
+
+EmptyStmt
+    :
+    ;
+
+ExpressionStmt
+    : Expression
+    ;
+
+SendStmt
+    : Expression "<-" Expression
+    ;
+
+IncDecStmt
+    : Expression ( "++" | "--" )
+    ;
+
+Assignment
+    : ExpressionList assign_op ExpressionList
+    ;
+
+assign_op
+    : ( add_op | mul_op )? "="
+    ;
+
+ShortVarDecl
+    : IdentiferList ":=" ExpressionList
+    ;
+
+GoStmt
+    : "go" CallExpr
+    ;
+
+ReturnStmt
+    : "return" ExpressionList?
+    ;
+
+BreakStmt
+    : "break"
+    ;
+
+ContinueStmt
+    : "continue"
+    ;
+
+FallthroughStmt
+    : "fallthrough"
+    ;
+
+IfStmt
+    : "if" ( ShortVarDecl ";" )? Expression Block ( "else" ( IfStmt | Block ) )?
+    ;
+
+SwitchStmt
+    : "switch" ( ShortVarDecl ";" )? ( ExprSwitchStmt | TypeSwitchStmt )
+    ;
+
+ExprSwitchStmt
+    : Expression? "{" ExprCaseClause+ "}"
+    ;
+
+ExprCaseClause
+    : ExprSwitchCase ":" StatementList
+    ;
+
+ExprSwitchCase
+    : "case" ExpressionList
+    | "default"
+    ;
+
+TypeSwitchStmt
+    : ( identifier "=" )? "typeof" PrimaryExpr "{" TypeCaseClause+ "}"
+    ;
+
+TypeCaseClause
+    : TypeSwitchCase ":" StatementList
+    ;
+
+TypeSwitchCase
+    : "case" TypeList
+    | "default"
+    ;
+
+TypeList
+    : Type ( "," Type )*
+    ;
+
+SelectStmt
+    : "select" "{" ( CommCase ":" StatementList )+ "}"
+    ;
+
+CommCase
+    : "case" ( SendStmt | RecvStmt )
+    | "default"
+    ;
+
+RecvStmt
+    : ( ExpressionList "=" | IdentiferList ":=" )? "<-" Expression
+    ;
+
+ForStmt
+    : "for" ( Expression | ForClause | ForInClause )? Block ( "else" Block )?
+    ;
+
+ForClause
+    : SimpleStmt? ";" Expression? ";" SimpleStmt?
+    ;
+
+ForInClause
+    : ( ExpressionList "=" | IdentiferList ":=" )? "in" Expression
+    ;
+
+DeferStmt
+    : "defer" CallExpr
+    ;
+
+Expression
+    : UnaryExpr
+    | Expression binary_op Expression
+    ;
+
+UnaryExpr
+    : PrimaryExpr
+    | unary_op UnaryExpr
+    ;
+
+binary_op
+    : "or" | "and" | rel_op | add_op | mul_op
+    ;
+
+rel_op
+    : "==" | "!=" | "<" | "<=" | ">" | ">=" | "in" | "not in"
+    ;
+
+add_op
+    : "+" | "-" | "|" | "^"
+    ;
+
+mul_op
+    : "*" | "/" | "%" | "<<" | ">>" | "&" | "&^"
+    ;
+
+unary_op
+    : "+" | "-" | "not" | "~" | "*" | "&" | "<-"
+    ;
+
+PrimaryExpr
+    : Operand
+    | Conversion
+    | PrimaryExpr "." identifier
+    | PrimaryExpr "[" Expression "]"
+    | PrimaryExpr Slice
+    | PrimaryExpr TypeAssertion
+    | CallExpr
+    ;
+
+Operand
+    : Literal
+    | OperandName
+    | "(" Expression ")"
+    ;
+
+Literal
+    : BasicLit
+    | CompositeLit
+    | FunctionLit
+    ;
+
+BasicLit
+    : int_lit | float_lit | char_lit | string_lit
+    ;
+
+OperandName
+    : identifier | QualifiedIdent
+    ;
+
+QualifiedIdent
+    : identifier "." identifier
+    ;
+
+CompositeLit
+    : StructType StructLiteral
+    | ArrayType ListLiteral
+    | ListType? ListLiteral
+    | SetType? SetLiteral
+    | MapType? MapLiteral
+    | TupleType? TupleLiteral
+    | TypeName
+    ;
+
+StructType
+    : "struct" "{" ( FieldDecl ";"? )+ "}"
+    ;
+
+FieldDecl
+    : ( IdentiferList Type | EmbeddedField ) string_lit?
+    ;
+
+EmbeddedField
+    : "*"? TypeName
+    ;
+
+StructLiteral
+    : "{" StructElementList* "}"
+    ;
+
+StructElementList
+    : StructElement ( "," StructElement )*
+    ;
+
+StructElement
+    : ( identifier ":" )? Expression
+    ;
+
+ArrayType
+    : "[" ( Expression | "..." ) "]" Type
+    ;
+
+ListLiteral
+    : "[" ElementList? "]"
+    ;
+
+ListType
+    : "[" Type "]"
+    ;
+
+SetType
+    : "{" Type "}"
+    ;
+
+SetLiteral
+    : "{" ElementList? "}"
+    ;
+
+MapType
+    : "map" "[" Type "]" Type
+    ;
+
+MapLiteral
+    : "{" MapElementList* "}"
+    | "{" ":" "}"
+    ;
+
+MapElementList
+    : MapElement ( "," MapElement )*
+    ;
+
+MapElement
+    : Expression ":" Expression
+    ;
+
+TupleType
+    : "(" TypeList* ")"
+    | "(" "," ")"
+    ;
+
+TupleLiteral
+    : "(" ElementList? ")"
+    ;
+
+ElementList
+    : Expression ( "," Expression )*
+    ;
+
+Slice
+    : "[" Expression? ":" Expression? "]"
+    | "[" Expression? ":" Expression? ":" Expression "]"
+    ;
+
+TypeAssertion
+    : "as" Type
+    ;
+
+CallExpr
+    : PrimaryExpr Arguments
+    ;
+
+Arguments
+    : "(" ( ( ExpressionList | Type ( "," ExpressionList )? ) "..."? ",", )? ")"
+    ;
+
+FunctionLit
+    : "func" Signature Block
+    ;
+
+Conversion
+    : Type "(" Expression ")"
+    ;
+
+Type
+    : TypeName
+    | TypeLit
+    ;
+
+TypeName
+    : identifier
+    | QualifiedIdent
+    ;
+
+TypeLit
+    : ArrayType
+    | StructType
+    | PointerType
+    | FunctionType
+    | InterfaceType
+    | ListType
+    | SetType
+    | MapType
+    | TupleType
+    | ChannelType
+    ;
+
+PointerType
+    : "*" Type
+    ;
+
+InterfaceType
+    : "interface" "{" ( ( MethodSpec | TypeName ) ";"? )+ "}"
+    ;
+
+MethodSpec
+    : identifier Signature
+    ;
+
+ChannelType
+    : ( "chan" | "chan" "<-" | "<-" "chan" ) Type
+    ;
