@@ -11,32 +11,40 @@ import (
 )
 
 type Lexer struct {
-	file       *token.File // source file handle
-	errors     ErrorList   // lexing errors
-	insertSemi bool        // insert a semicolon before next newline
+	file       *token.File  // source file handle
+	errh       ErrorHandler // error reporting
+	insertSemi bool         // insert a semicolon before next newline
 
 	strBuf  strings.Builder
 	scanner scanner.Scanner // scanner that does much of the heavy lifting
 }
 
-func (lx *Lexer) Init(file *token.File, src io.Reader, scanComments bool) {
+// An ErrorHandler may be provided to Lexer.Init. If a syntax error is
+// encountered and a handler was installed, the handler is called with a
+// position and an error message. The position points to the beginning of
+// the offending token.
+type ErrorHandler func(pos token.Position, msg string)
+
+func (lx *Lexer) Init(file *token.File, src io.Reader, errh ErrorHandler, scanComments bool) {
 	// explicitly initialize all fields since a scanner may be reused
 	lx.file = file
-	lx.errors = ErrorList{}
 	lx.insertSemi = false
 
 	lx.scanner.Init(src)
 	lx.scanner.Filename = file.Name()
 	lx.scanner.Mode = scanner.ScanInts | scanner.ScanFloats | scanner.ScanChars | scanner.ScanStrings | scanner.ScanRawStrings
 	lx.scanner.Whitespace = 1<<'\t' | 1<<'\r' | 1<<' '
-	lx.scanner.Error = func(s *scanner.Scanner, msg string) {
-		lx.error(msg)
+	if errh != nil {
+		lx.scanner.Error = func(s *scanner.Scanner, msg string) {
+			errh(token.Position(s.Pos()), msg)
+		}
 	}
 }
 
-func (lx *Lexer) Lex() (tok token.Token, lit string) {
+func (lx *Lexer) Lex() (pos token.Pos, tok token.Token, lit string) {
 lexAgain:
 	ch := lx.scanner.Scan()
+	pos = lx.currentPos()
 
 	insertSemi := false
 	switch ch {
@@ -240,14 +248,14 @@ lexAgain:
 	case '\n':
 		if lx.insertSemi {
 			lx.insertSemi = false
-			return token.SEMI, "\n"
+			return pos, token.SEMI, "\n"
 		}
 
 		goto lexAgain
 	case scanner.EOF:
 		if lx.insertSemi {
 			lx.insertSemi = false
-			return token.SEMI, ""
+			return pos, token.SEMI, ""
 		}
 
 		tok = token.EOF
@@ -266,7 +274,7 @@ lexAgain:
 				tok = token.IDENT
 			}
 		} else {
-			lx.errorf("illegal character %#U", ch)
+			lx.scanner.Error(&lx.scanner, fmt.Sprintf("illegal character %#U", ch))
 		}
 	}
 
@@ -275,7 +283,7 @@ lexAgain:
 	return
 }
 
-func (lx *Lexer) Pos() token.Pos {
+func (lx *Lexer) currentPos() token.Pos {
 	return lx.file.Pos(lx.scanner.Offset)
 }
 
@@ -292,16 +300,4 @@ func (lx *Lexer) scanIdentifier(ch rune) string {
 
 func (lx *Lexer) isIdentRune(ch rune, firstRune bool) bool {
 	return ch == '_' || unicode.IsLetter(ch) || unicode.IsDigit(ch) && !firstRune
-}
-
-func (lx *Lexer) Err() error {
-	return lx.errors.Err()
-}
-
-func (lx *Lexer) error(msg string) {
-	lx.errors.Add(lx.scanner.Pos(), msg)
-}
-
-func (lx *Lexer) errorf(format string, args ...interface{}) {
-	lx.error(fmt.Sprintf(format, args...))
 }

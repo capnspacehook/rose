@@ -3,6 +3,7 @@ package lexer
 import (
 	"strings"
 	"testing"
+	"text/scanner"
 
 	"github.com/capnspacehook/rose/token"
 )
@@ -113,22 +114,23 @@ l[2:5]
 	}
 
 	var l Lexer
+	var errs ErrorList
 	fs := token.NewFileSet()
+	eh := func(pos token.Position, msg string) { errs.Add(scanner.Position(pos), msg) }
 
-	l.Init(fs.AddFile("", fs.Base(), len(input)), strings.NewReader(input), true)
+	l.Init(fs.AddFile("", -1, len(input)), strings.NewReader(input), eh, true)
 	for _, test := range tests {
-		tok, lit := l.Lex()
+		pos, tok, lit := l.Lex()
 		if tok != test.tok {
-			t.Fatalf("%s: token wrong; expected=%q, got=%q", fs.Position(l.Pos()), test.tok, tok)
+			t.Fatalf("%s: token wrong; expected=%q, got=%q", fs.Position(pos), test.tok, tok)
 		}
 
 		if lit != test.lit {
-			t.Fatalf("%s: literal wrong; expected=%q, got=%q", fs.Position(l.Pos()), test.lit, lit)
+			t.Fatalf("%s: literal wrong; expected=%q, got=%q", fs.Position(pos), test.lit, lit)
 		}
 	}
 
-	err := l.Err()
-	if err != nil {
+	if err := errs.Err(); err != nil {
 		t.Error(err)
 	}
 }
