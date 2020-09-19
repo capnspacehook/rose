@@ -3,7 +3,7 @@ Program
     ;
 
 PackageClause
-    : "package" identifier
+    : "package" identifier ";"?
     ;
 
 ImportDecl
@@ -11,11 +11,7 @@ ImportDecl
     ;
 
 ImportSpec
-    : PackageName? ImportPath
-    ;
-
-ImportPath
-    : string
+    : identifier? string_lit ";"?
     ;
 
 TopLevelDecl
@@ -44,7 +40,7 @@ IdentiferList
     ;
 
 ExpressionList
-    : Expression ( "," Expression )* ";"?
+    : Expression ( "," Expression )*
     ;
 
 TypeDecl
@@ -68,7 +64,7 @@ VarSpec
     ;
 
 FuncDecl
-    : "func" identifier Signature Block
+    : "func" identifier Signature Block ";"?
     ;
 
 Signature
@@ -92,7 +88,7 @@ Result
     ;
 
 MethodDecl
-    : "func" Receiver identifier Signature Block
+    : "func" Receiver identifier Signature Block ";"?
     ;
 
 Receiver
@@ -136,19 +132,19 @@ EmptyStmt
     ;
 
 ExpressionStmt
-    : Expression
+    : Expression ";"?
     ;
 
 SendStmt
-    : Expression "<-" Expression
+    : Expression "<-" Expression ";"?
     ;
 
 IncDecStmt
-    : Expression ( "++" | "--" )
+    : Expression ( "++" | "--" ) ";"?
     ;
 
 Assignment
-    : ExpressionList assign_op ExpressionList
+    : ExpressionList assign_op ExpressionList ";"?
     ;
 
 assign_op
@@ -156,35 +152,35 @@ assign_op
     ;
 
 ShortVarDecl
-    : IdentiferList ":=" ExpressionList
+    : IdentiferList ":=" ExpressionList ";"?
     ;
 
 GoStmt
-    : "go" CallExpr
+    : "go" CallExpr ";"?
     ;
 
 ReturnStmt
-    : "return" ExpressionList?
+    : "return" ExpressionList? ";"?
     ;
 
 BreakStmt
-    : "break"
+    : "break" ";"?
     ;
 
 ContinueStmt
-    : "continue"
+    : "continue" ";"?
     ;
 
 FallthroughStmt
-    : "fallthrough"
+    : "fallthrough" ";"?
     ;
 
 IfStmt
-    : "if" ( ShortVarDecl ";" )? Expression Block ( "else" ( IfStmt | Block ) )?
+    : "if" ( ShortVarDecl ";" )? Expression Block ( ";" | "else" ( IfStmt | Block ";"? ) )?
     ;
 
 SwitchStmt
-    : "switch" ( ShortVarDecl ";" )? ( ExprSwitchStmt | TypeSwitchStmt )
+    : "switch" ( ShortVarDecl ";" )? ( ExprSwitchStmt | TypeSwitchStmt ) ";"?
     ;
 
 ExprSwitchStmt
@@ -218,7 +214,7 @@ TypeList
     ;
 
 SelectStmt
-    : "select" "{" ( CommCase ":" StatementList )+ "}"
+    : "select" "{" ( CommCase ":" StatementList )+ "}" ";"?
     ;
 
 CommCase
@@ -227,11 +223,11 @@ CommCase
     ;
 
 RecvStmt
-    : ( ExpressionList "=" | IdentiferList ":=" )? "<-" Expression
+    : ( ExpressionList "=" | IdentiferList ":=" )? "<-" Expression ";"?
     ;
 
 ForStmt
-    : "for" ( Expression | ForClause | ForInClause )? Block ( "else" Block )?
+    : "for" ( Expression | ForClause | ForInClause )? Block ( ";" | "else" Block ";"? )?
     ;
 
 ForClause
@@ -243,7 +239,7 @@ ForInClause
     ;
 
 DeferStmt
-    : "defer" CallExpr
+    : "defer" CallExpr ";"?
     ;
 
 Expression
