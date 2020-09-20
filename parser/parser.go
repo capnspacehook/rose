@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"io"
+	"text/scanner"
 
 	"github.com/capnspacehook/rose/ast"
 	"github.com/capnspacehook/rose/lexer"
@@ -23,11 +24,14 @@ var boolConsts = map[string]bool{
 }
 
 type Parser struct {
-	fset   *token.FileSet
+	file   *token.File
 	errors lexer.ErrorList
 	lexer  lexer.Lexer
 
-	file *token.File
+	// Tracing/debugging
+	//mode   Mode // parsing mode
+	trace  bool // == (mode & Trace != 0)
+	indent int  // indentation used for tracing output
 
 	// Next token
 	pos token.Pos   // token position
@@ -49,11 +53,6 @@ type Parser struct {
 	pkgScope   *ast.Scope   // pkgScope.Outer == nil
 	topScope   *ast.Scope   // top-most scope; may be pkgScope
 	unresolved []*ast.Ident // unresolved identifiers
-}
-
-func NewParser(fset *token.FileSet) (p Parser) {
-	p.fset = fset
-	return
 }
 
 // ----------------------------------------------------------------------------
@@ -131,29 +130,79 @@ func (p *Parser) resolve(x ast.Expr) {
 }
 
 // ----------------------------------------------------------------------------
+// Parsing support
+
+func (p *Parser) printTrace(a ...interface{}) {
+	const dots = ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
+	const n = len(dots)
+	pos := p.file.Position(p.pos)
+	fmt.Printf("%5d:%3d: ", pos.Line, pos.Column)
+	i := 2 * p.indent
+	for i > n {
+		fmt.Print(dots)
+		i -= n
+	}
+	// i <= n
+	fmt.Print(dots[0:i])
+	fmt.Println(a...)
+}
+
+func trace(p *Parser, msg string) *Parser {
+	p.printTrace(msg, "(")
+	p.indent++
+	return p
+}
+
+// Usage pattern: defer un(trace(p, "..."))
+func un(p *Parser) {
+	p.indent--
+	p.printTrace(")")
+}
+
+// Advance to the next token.
+func (p *Parser) next0() {
+	// Because of one-token look-ahead, print the previous token
+	// when tracing as it provides a more readable output. The
+	// very first token (!p.pos.IsValid()) is not initialized
+	// (it is token.ILLEGAL), so don't print it .
+	if p.trace && p.pos.IsValid() {
+		s := p.tok.String()
+		switch {
+		case p.tok.IsLiteral():
+			p.printTrace(s, p.lit)
+		case p.tok.IsOperator(), p.tok.IsKeyword():
+			p.printTrace("\"" + s + "\"")
+		default:
+			p.printTrace(s)
+		}
+	}
+
+	p.pos, p.tok, p.lit = p.lexer.Lex()
+}
+
+// ----------------------------------------------------------------------------
 // Error handling
 
 // A bailout panic is raised to indicate early termination.
 type bailout struct{}
 
-//TODO: (capnspacehook) Fix token.Position/scanner.Position conflict
 func (p *Parser) error(pos token.Pos, msg string) {
-	//epos := p.file.Position(pos)
+	epos := p.file.Position(pos)
 
 	// If AllErrors is not set, discard errors reported on the same line
 	// as the last recorded error and stop parsing if there are more than
 	// 10 errors.
-	/*if p.mode&AllErrors == 0 {
-		n := len(p.errors)
-		if n > 0 && p.errors[n-1].Pos.Line == epos.Line {
-			return // discard - likely a spurious error
-		}
-		if n > 10 {
-			panic(bailout{})
-		}
-	}*/
+	//if p.mode&AllErrors == 0 {
+	n := len(p.errors)
+	if n > 0 && p.errors[n-1].Pos.Line == epos.Line {
+		return // discard - likely a spurious error
+	}
+	if n > 10 {
+		panic(bailout{})
+	}
+	//}
 
-	//p.errors.Add(epos, msg)
+	p.errors.Add(scanner.Position(epos), msg)
 }
 
 func (p *Parser) errorExpected(pos token.Pos, msg string) {
@@ -162,7 +211,7 @@ func (p *Parser) errorExpected(pos token.Pos, msg string) {
 		// the error happened at the current position;
 		// make the error message more specific
 		switch {
-		case p.tok == token.SEMICOLON && p.lit == "\n":
+		case p.tok == token.SEMI && p.lit == "\n":
 			msg += ", found newline"
 		case p.tok.IsLiteral():
 			// print 123 rather than 'INT', etc.
@@ -194,7 +243,7 @@ func (p *Parser) expect(tok token.Token) token.Pos {
 func (p *Parser) expectSemi() {
 	// semicolon is optional before a closing ')' or '}'
 	if p.tok != token.RPAREN && p.tok != token.RBRACE {
-		if p.tok == token.SEMICOLON {
+		if p.tok == token.SEMI {
 			p.next()
 		} else {
 			p.errorExpected(p.pos, "';'")
@@ -240,35 +289,37 @@ func (p *Parser) advance(to map[token.Token]bool) {
 }
 
 var stmtStart = map[token.Token]bool{
-	/*token.BREAK:       true,
-	token.CONST:       true,
-	token.CONTINUE:    true,
-	token.DEFER:       true,
+	token.BREAK:    true,
+	token.CONST:    true,
+	token.CONTINUE: true,
+	//token.DEFER:       true,
 	token.FALLTHROUGH: true,
-	token.FOR:         true,
-	token.GO:          true,
-	token.GOTO:        true,
-	token.IF:          true,
-	token.RETURN:      true,
-	token.SELECT:      true,
-	token.SWITCH:      true,
-	token.TYPE:        true,*/
+	//token.FOR:         true,
+	//token.GO:          true,
+	//token.GOTO:        true,
+	token.IF:     true,
+	token.LET:    true,
+	token.RETURN: true,
+	//token.SELECT:      true,
+	//token.SWITCH:      true,
+	//token.TYPE:        true,
 	token.VAR: true,
 }
 
 var declStart = map[token.Token]bool{
 	token.CONST: true,
+	token.LET:   true,
 	//token.TYPE:  true,
 	token.VAR: true,
 }
 
 var exprEnd = map[token.Token]bool{
-	token.COMMA:     true,
-	token.COLON:     true,
-	token.SEMICOLON: true,
-	token.RPAREN:    true,
-	token.RBRACK:    true,
-	token.RBRACE:    true,
+	token.COMMA:  true,
+	token.COLON:  true,
+	token.SEMI:   true,
+	token.RPAREN: true,
+	token.RBRACK: true,
+	token.RBRACE: true,
 }
 
 // safePos returns a valid file position for a given position: If pos
@@ -307,6 +358,10 @@ func (p *Parser) parseIdent() *ast.Ident {
 }
 
 func (p *Parser) parseIdentList() (list []*ast.Ident) {
+	if p.trace {
+		defer un(trace(p, "IdentList"))
+	}
+
 	list = append(list, p.parseIdent())
 	for p.tok == token.COMMA {
 		p.next()
@@ -317,63 +372,13 @@ func (p *Parser) parseIdentList() (list []*ast.Ident) {
 }
 
 // ----------------------------------------------------------------------------
-// Common productions
-
-// If lhs is set and the result is an identifier, it is not resolved.
-// The result may be a type or even a raw type ([...]int). Callers must
-// check the result (using checkExpr or checkExprOrType), depending on
-// context.
-func (p *Parser) parseExpr(lhs bool) ast.Expr {
-	return p.parseBinaryExpr(lhs, token.LowestPrec+1)
-}
-
-// If lhs is set, result list elements which are identifiers are not resolved.
-func (p *Parser) parseExprList(lhs bool) (list []ast.Expr) {
-	list = append(list, p.checkExpr(p.parseExpr(lhs)))
-	for p.tok == token.COMMA {
-		p.next()
-		list = append(list, p.checkExpr(p.parseExpr(lhs)))
-	}
-
-	return
-}
-
-func (p *Parser) parseLhsList() []ast.Expr {
-	old := p.inRhs
-	p.inRhs = false
-	list := p.parseExprList(true)
-	switch p.tok {
-	case token.COLON:
-		// lhs of a label declaration or a communication clause of a select
-		// statement (parseLhsList is not called when parsing the case clause
-		// of a switch statement):
-		// - labels are declared by the caller of parseLhsList
-		// - for communication clauses, if there is a stand-alone identifier
-		//   followed by a colon, we have a syntax error; there is no need
-		//   to resolve the identifier in that case
-	default:
-		// identifiers must be declared elsewhere
-		for _, x := range list {
-			p.resolve(x)
-		}
-	}
-	p.inRhs = old
-
-	return list
-}
-
-func (p *Parser) parseRhsList() []ast.Expr {
-	old := p.inRhs
-	p.inRhs = true
-	list := p.parseExprList(false)
-	p.inRhs = old
-	return list
-}
-
-// ----------------------------------------------------------------------------
 // Types
 
 func (p *Parser) parseType() ast.Expr {
+	if p.trace {
+		defer un(trace(p, "Type"))
+	}
+
 	typ := p.tryType()
 
 	if typ == nil {
@@ -388,6 +393,10 @@ func (p *Parser) parseType() ast.Expr {
 
 // If the result is an identifier, it is not resolved.
 func (p *Parser) parseTypeName() ast.Expr {
+	if p.trace {
+		defer un(trace(p, "TypeName"))
+	}
+
 	ident := p.parseIdent()
 	// don't resolve ident yet - it may be a parameter or field name
 
@@ -440,264 +449,52 @@ func (p *Parser) tryType() ast.Expr {
 	return typ
 }
 
-// ----------------------------------------------------------------------------
-// Expressions
+func ParseFile(file *token.File, src io.Reader) (f *ast.File, err error) {
+	var p Parser
+	p.file = file
+	eh := func(pos token.Position, msg string) { p.errors.Add(scanner.Position(pos), msg) }
+	p.lexer.Init(p.file, src, eh, false)
 
-// If lhs is set and the result is an identifier, it is not resolved.
-func (p *Parser) parseUnaryExpr(lhs bool) ast.Expr {
-	switch p.tok {
-	case token.ADD, token.SUB, token.NOT, token.INVT, token.AND:
-		pos, op := p.pos, p.tok
-		p.next()
-		x := p.parseUnaryExpr(false)
-		return &ast.UnaryExpr{OpPos: pos, Op: op, Expr: p.checkExpr(x)}
-
-		/*case token.ARROW:
-		// channel type or receive expression
-		arrow := p.pos
-		p.next()
-
-		// If the next token is token.CHAN we still don't know if it
-		// is a channel type or a receive operation - we only know
-		// once we have found the end of the unary expression. There
-		// are two cases:
-		//
-		//   <- type  => (<-type) must be channel type
-		//   <- expr  => <-(expr) is a receive from an expression
-		//
-		// In the first case, the arrow must be re-associated with
-		// the channel type parsed already:
-		//
-		//   <- (chan type)    =>  (<-chan type)
-		//   <- (chan<- type)  =>  (<-chan (<-type))
-
-		x := p.parseUnaryExpr(false)
-
-		// determine which case we have
-		if typ, ok := x.(*ast.ChanType); ok {
-			// (<-type)
-
-			// re-associate position info and <-
-			dir := ast.SEND
-			for ok && dir == ast.SEND {
-				if typ.Dir == ast.RECV {
-					// error: (<-type) is (<-(<-chan T))
-					p.errorExpected(typ.Arrow, "'chan'")
-				}
-				arrow, typ.Begin, typ.Arrow = typ.Arrow, arrow, arrow
-				dir, typ.Dir = typ.Dir, ast.RECV
-				typ, ok = typ.Value.(*ast.ChanType)
+	defer func() {
+		if e := recover(); e != nil {
+			// resume same panic if it's not a bailout
+			if _, ok := e.(bailout); !ok {
+				panic(e)
 			}
-			if dir == ast.SEND {
-				p.errorExpected(arrow, "channel type")
+		}
+
+		// set result values
+		if f == nil {
+			// source is not a valid Rose source file - satisfy
+			// ParseFile API and return a valid (but) empty
+			// *ast.File
+			f = &ast.File{
+				Name:  new(ast.Ident),
+				Scope: ast.NewScope(nil),
 			}
-
-			return x
 		}
 
-		// <-(expr)
-		return &ast.UnaryExpr{OpPos: arrow, Op: token.ARROW, Expr: p.checkExpr(x)}*/
+		p.errors.Sort()
+		err = p.errors.Err()
+	}()
+
+	f = p.parseFile()
+
+	return
+}
+
+func (p *Parser) parseFile() *ast.File {
+	if p.trace {
+		defer un(trace(p, "File"))
 	}
-
-	return p.parsePrimaryExpr(lhs)
-}
-
-// parseOperand may return an expression or a raw type (incl. array
-// types of the form [...]T. Callers must verify the result.
-// If lhs is set and the result is an identifier, it is not resolved.
-func (p *Parser) parseOperand(lhs bool) ast.Expr {
-	switch p.tok {
-	case token.IDENT:
-		x := p.parseIdent()
-		if !lhs {
-			p.resolve(x)
-		}
-		return x
-
-	case token.INT, token.FLOAT, token.CHAR, token.STRING, token.RAW_STRING:
-		x := &ast.BasicLit{ValuePos: p.pos, Kind: p.tok, Value: p.lit}
-		p.next()
-		return x
-
-	case token.LPAREN:
-		lparen := p.pos
-		p.next()
-		p.exprLev++
-		x := p.parseRhsOrType() // types may be parenthesized: (some type)
-		p.exprLev--
-		rparen := p.expect(token.RPAREN)
-		return &ast.ParenExpr{Lparen: lparen, Expr: x, Rparen: rparen}
-
-		/*case token.FUNC:
-		return p.parseFuncTypeOrLit()*/
-	}
-
-	/*if typ := p.tryIdentOrType(); typ != nil {
-		// could be type for composite literal or conversion
-		_, isIdent := typ.(*ast.Ident)
-		assert(!isIdent, "type cannot be identifier")
-		return typ
-	}*/
-
-	// we have an error
-	pos := p.pos
-	p.errorExpected(pos, "operand")
-	p.advance(stmtStart)
-	return &ast.BadExpr{From: pos, To: p.pos}
-}
-
-// If lhs is set and the result is an identifier, it is not resolved.
-func (p *Parser) parsePrimaryExpr(lhs bool) ast.Expr {
-	x := p.parseOperand(lhs)
-	/*L:
-	for {
-		switch p.tok {
-		case token.PERIOD:
-		p.next()
-		if lhs {
-			p.resolve(x)
-		}
-		switch p.tok {
-		case token.IDENT:
-			x = p.parseSelector(p.checkExprOrType(x))
-		case token.LPAREN:
-			x = p.parseTypeAssertion(p.checkExpr(x))
-		default:
-			pos := p.pos
-			p.errorExpected(pos, "selector or type assertion")
-			p.next() // make progress
-			sel := &ast.Ident{NamePos: pos, Name: "_"}
-			x = &ast.SelectorExpr{X: x, Sel: sel}
-		}
-		case token.LBRACK:
-			if lhs {
-				p.resolve(x)
-			}
-			x = p.parseIndexOrSlice(p.checkExpr(x))
-		case token.LPAREN:
-			if lhs {
-				p.resolve(x)
-			}
-			x = p.parseCallOrConversion(p.checkExprOrType(x))
-		case token.LBRACE:
-			if isLiteralType(x) && (p.exprLev >= 0 || !isTypeName(x)) {
-				if lhs {
-					p.resolve(x)
-				}
-				x = p.parseLiteralValue(x)
-			} else {
-				break L
-			}
-		default:
-			break L
-		}
-		lhs = false // no need to try to resolve again
-	}*/
-
-	return x
-}
-
-func (p *Parser) tokPrec() (token.Token, int) {
-	tok := p.tok
-	if p.inRhs && tok == token.ASSIGN {
-		tok = token.EQL
-	}
-	return tok, tok.Precedence()
-}
-
-// If lhs is set and the result is an identifier, it is not resolved.
-func (p *Parser) parseBinaryExpr(lhs bool, prec1 int) ast.Expr {
-	x := p.parseUnaryExpr(lhs)
-	for {
-		op, oprec := p.tokPrec()
-		if oprec < prec1 {
-			return x
-		}
-		pos := p.expect(op)
-		if lhs {
-			p.resolve(x)
-			lhs = false
-		}
-		y := p.parseBinaryExpr(false, oprec+1)
-		x = &ast.BinaryExpr{Lhs: p.checkExpr(x), OpPos: pos, Op: op, Rhs: p.checkExpr(y)}
-	}
-}
-
-func (p *Parser) parseRhsOrType() ast.Expr {
-	old := p.inRhs
-	p.inRhs = true
-	x := p.checkExprOrType(p.parseExpr(false))
-	p.inRhs = old
-	return x
-}
-
-// If x is of the form (T), unparen returns unparen(T), otherwise it returns x.
-func unparen(x ast.Expr) ast.Expr {
-	if p, isParen := x.(*ast.ParenExpr); isParen {
-		x = unparen(p.Expr)
-	}
-	return x
-}
-
-// checkExprOrType checks that x is an expression or a type
-// (and not a raw type such as [...]T).
-//
-func (p *Parser) checkExprOrType(x ast.Expr) ast.Expr {
-	switch unparen(x).(type) {
-	case *ast.ParenExpr:
-		panic("unreachable")
-	case *ast.UnaryExpr:
-		/*case *ast.ArrayType:
-		if len, isEllipsis := t.Len.(*ast.Ellipsis); isEllipsis {
-			p.error(len.Pos(), "expected array length, found '...'")
-			x = &ast.BadExpr{From: x.Pos(), To: p.safePos(x.End())}
-		}
-		*/
-	}
-
-	// all other nodes are expressions or types
-	return x
-}
-
-// checkExpr checks that x is an expression (and not a type).
-func (p *Parser) checkExpr(x ast.Expr) ast.Expr {
-	switch unparen(x).(type) {
-	case *ast.BadExpr:
-	case *ast.Ident:
-	case *ast.BasicLit:
-	//case *ast.FuncLit:
-	//case *ast.CompositeLit:
-	case *ast.ParenExpr:
-		panic("unreachable")
-	/*case *ast.SelectorExpr:
-	case *ast.IndexExpr:
-	case *ast.SliceExpr:
-	case *ast.TypeAssertExpr:
-		// If t.Type == nil we have a type assertion of the form
-		// y.(type), which is only allowed in type switch expressions.
-		// It's hard to exclude those but for the case where we are in
-		// a type switch. Instead be lenient and test this in the type
-		// checker.
-	case *ast.CallExpr:
-	case *ast.StarExpr:*/
-	case *ast.UnaryExpr:
-	case *ast.BinaryExpr:
-	default:
-		// all other nodes are not proper expressions
-		p.errorExpected(x.Pos(), "expression")
-		x = &ast.BadExpr{From: x.Pos(), To: p.safePos(x.End())}
-	}
-	return x
-}
-
-// ----------------------------------------------------------------------------
-// Parsing logic
-
-func (p *Parser) ParseFile(filename string, src io.Reader, srcLen int) *ast.File {
-	p.file = p.fset.AddFile(filename, -1, srcLen)
-	p.lexer.Init(p.file, src, srcLen)
 
 	p.next()
+
+	// Don't bother parsing the rest if we had errors scanning the first token.
+	// Likely not a Rose source file at all.
+	if p.errors.Len() != 0 {
+		return nil
+	}
 
 	p.openScope()
 	var stmts []ast.Stmt
@@ -710,91 +507,4 @@ func (p *Parser) ParseFile(filename string, src io.Reader, srcLen int) *ast.File
 		Stmts:      stmts,
 		Unresolved: p.unresolved,
 	}
-}
-
-func (p *Parser) parseStmt() (s ast.Stmt) {
-	switch p.tok {
-	case token.CONST, token.VAR:
-		s = &ast.DeclStmt{Decl: p.parseDecl()}
-	}
-
-	return
-}
-
-type parseSpecFunc func(keyword token.Token, i int) ast.Spec
-
-func (p *Parser) parseDecl() ast.Decl {
-	var f parseSpecFunc
-	switch p.tok {
-	case token.CONST, token.VAR:
-		f = p.parseValueSpec
-
-	}
-
-	return p.parseGenDecl(p.tok, f)
-
-}
-
-func (p *Parser) parseGenDecl(keyword token.Token, f parseSpecFunc) *ast.GenDecl {
-	pos := p.expect(keyword)
-	var lparen, rparen token.Pos
-	var list []ast.Spec
-
-	if p.tok == token.LPAREN {
-		lparen = p.pos
-		p.next()
-		for i := 0; p.tok != token.RPAREN && p.tok != token.EOF; i++ {
-			list = append(list, f(keyword, i))
-		}
-
-		rparen = p.expect(token.RPAREN)
-		p.expectSemi()
-	} else {
-		list = append(list, f(keyword, 0))
-	}
-
-	return &ast.GenDecl{
-		TokPos: pos,
-		Tok:    keyword,
-		Lparen: lparen,
-		Specs:  list,
-		Rparen: rparen,
-	}
-}
-
-func (p *Parser) parseValueSpec(keyword token.Token, i int) ast.Spec {
-	pos := p.pos
-	idents := p.parseIdentList()
-	typ := p.tryType()
-	var values []ast.Expr
-	// always permit optional initialization for more tolerant parsing
-	if p.tok == token.ASSIGN {
-		p.next()
-		values = p.parseRhsList()
-	}
-	p.expectSemi()
-
-	switch keyword {
-	case token.VAR:
-		if typ == nil && values == nil {
-			p.error(pos, "missing variable type or initialization")
-		}
-	case token.CONST:
-		if values == nil && (i == 0 || typ != nil) {
-			p.error(pos, "missing constant value")
-		}
-	}
-
-	spec := &ast.ValueSpec{
-		Names:  idents,
-		Type:   typ,
-		Values: values,
-	}
-	kind := ast.Con
-	if keyword == token.VAR {
-		kind = ast.Var
-	}
-	p.declare(spec, i, p.topScope, kind, idents...)
-
-	return spec
 }
