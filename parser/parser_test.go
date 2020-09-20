@@ -79,6 +79,71 @@ func TestConstDecls(t *testing.T) {
 					),
 				)))
 	})
+
+	expectParseError(t, "const a, b = 'v'", "<input>:1:7: missing value in const declaration")
+	expectParseError(t, "const a = 'v', 0.9", "<input>:1:7: extra expression in const declaration")
+}
+
+func TestVarDecls(t *testing.T) {
+	expectParse(t, "var a float", func(p pfn) []ast.Stmt {
+		return stmts(
+			varDecl(p(1, 1), 0, 0, valueSpec(
+				idents(ident(p(1, 5), "a")), ident(p(1, 7), "float"), nil,
+			)))
+	})
+
+	expectParse(t, "var a, b int", func(p pfn) []ast.Stmt {
+		return stmts(
+			varDecl(p(1, 1), 0, 0, valueSpec(
+				idents(
+					ident(p(1, 5), "a"),
+					ident(p(1, 8), "b"),
+				),
+				ident(p(1, 10), "int"),
+				nil,
+			)))
+	})
+
+	expectParse(t, `var (
+	a, b string
+)`, func(p pfn) []ast.Stmt {
+		return stmts(
+			varDecl(p(1, 1), p(1, 5), p(3, 1),
+				valueSpec(
+					idents(
+						ident(p(2, 2), "a"),
+						ident(p(2, 5), "b"),
+					),
+					ident(p(2, 7), "string"),
+					nil,
+				)))
+	})
+
+	expectParse(t, `var (
+	a float
+	b rune
+)`, func(p pfn) []ast.Stmt {
+		return stmts(
+			varDecl(p(1, 1), p(1, 5), p(4, 1),
+				valueSpec(
+					idents(
+						ident(p(2, 2), "a"),
+					),
+					ident(p(2, 4), "float"),
+					nil,
+				),
+				valueSpec(
+					idents(
+						ident(p(3, 2), "b"),
+					),
+					ident(p(3, 4), "rune"),
+					nil,
+				)))
+	})
+
+	// TODO: fix error msg
+	expectParseError(t, "var foo, bar int, string", "<input>:1:17: expected ';', found ','")
+	expectParseError(t, `var foo = "howdy"`, "<input>:1:5: initialization is not allowed in a var declaration")
 }
 
 type pfn func(int, int) token.Pos        // position conversion function
@@ -111,12 +176,28 @@ func expectParse(t *testing.T, input string, fn expectedFn) {
 	}
 }
 
+func expectParseError(t *testing.T, input, expectedErr string) {
+	fset := token.NewFileSet()
+	testFile := fset.AddFile("", -1, len(input))
+
+	_, err := parser.ParseFile(testFile, strings.NewReader(input))
+	require.EqualError(t, err, expectedErr)
+}
+
 func stmts(s ...ast.Stmt) []ast.Stmt {
 	return s
 }
 
 func constDecl(pos, lParen, rParen token.Pos, specs ...ast.Spec) ast.Stmt {
 	return genDecl(token.CONST, pos, lParen, rParen, specs)
+}
+
+func letDecl(pos, lParen, rParen token.Pos, specs ...ast.Spec) ast.Stmt {
+	return genDecl(token.LET, pos, lParen, rParen, specs)
+}
+
+func varDecl(pos, lParen, rParen token.Pos, specs ...ast.Spec) ast.Stmt {
+	return genDecl(token.VAR, pos, lParen, rParen, specs)
 }
 
 func genDecl(tok token.Token, pos, lParen, rParen token.Pos, specs []ast.Spec) ast.Stmt {
@@ -221,7 +302,7 @@ func equalSpec(t *testing.T, expected, actual ast.Spec) {
 			equalIdent(t, expected.Names[i], actual.(*ast.ValueSpec).Names[i])
 		}
 
-		require.Equal(t, expected.Type, actual.(*ast.ValueSpec).Type)
+		equalExpr(t, expected.Type, actual.(*ast.ValueSpec).Type)
 
 		require.Equal(t, len(expected.Values), len(actual.(*ast.ValueSpec).Values))
 		for i := 0; i < len(expected.Values); i++ {
@@ -252,6 +333,8 @@ func equalExpr(t *testing.T, expected, actual ast.Expr) {
 	require.IsType(t, expected, actual)
 
 	switch expected := expected.(type) {
+	case *ast.Ident:
+		equalIdent(t, expected, actual.(*ast.Ident))
 	case *ast.BasicLit:
 		require.Equal(t, expected.ValuePos, actual.(*ast.BasicLit).ValuePos)
 		require.Equal(t, expected.Kind, actual.(*ast.BasicLit).Kind)

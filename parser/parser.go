@@ -247,7 +247,7 @@ func (p *Parser) expectSemi() {
 			p.next()
 		} else {
 			p.errorExpected(p.pos, "';'")
-			//p.advance(stmtStart)
+			p.advance(stmtStart)
 		}
 	}
 }

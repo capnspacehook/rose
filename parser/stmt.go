@@ -88,7 +88,7 @@ func (p *Parser) parseValueSpec(keyword token.Token, i int) ast.Spec {
 	var values []ast.Expr
 	if p.tok == token.ASSIGN {
 		if keyword == token.VAR {
-			p.error(pos, "initialization is not allowed in a 'var' statement")
+			p.error(pos, "initialization is not allowed in a var declaration")
 		}
 		p.next()
 		values = p.parseRhsList()
@@ -107,6 +107,14 @@ func (p *Parser) parseValueSpec(keyword token.Token, i int) ast.Spec {
 	case token.CONST:
 		if values == nil && (i == 0 || typ != nil) {
 			p.error(pos, "missing constant value")
+		}
+	}
+
+	if keyword != token.VAR && len(idents) != len(values) {
+		if len(idents) > len(values) {
+			p.error(pos, "missing value in "+keyword.String()+" declaration")
+		} else {
+			p.error(pos, "extra expression in "+keyword.String()+" declaration")
 		}
 	}
 
